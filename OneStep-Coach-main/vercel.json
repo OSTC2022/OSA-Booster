@@ -1,0 +1,14 @@
+{
+  "regions": ["icn1"],
+  "functions": {
+    "app/api/running-league/analyze-screenshot/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/member-backup",
+      "schedule": "0 15 * * *"
+    }
+  ]
+}

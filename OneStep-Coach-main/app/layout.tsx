@@ -1,0 +1,123 @@
+import type { Metadata, Viewport } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
+import { OnestepSplashLayer } from '@/components/brand/onestep-splash-layer'
+import { PwaSplashHeadLinks } from '@/components/brand/pwa-splash-head-links'
+import { PwaBootstrap } from '@/components/pwa/pwa-bootstrap'
+import { PwaInstallAffordance } from '@/components/pwa/pwa-install-affordance'
+import { SPLASH_BOOT_SCRIPT } from '@/lib/splash-boot'
+import { PWA_ASSET_VERSION } from '@/lib/pwa-splash-links'
+import './globals.css'
+
+const assetVersionQuery = `v=${PWA_ASSET_VERSION}`
+
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+  display: 'swap',
+})
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+  display: 'swap',
+})
+
+export const metadata: Metadata = {
+  title: {
+    default: '원스텝',
+    template: '%s · 원스텝',
+  },
+  description: '회원, 수업, 출석 관리를 위한 OneStep Training Center',
+  applicationName: '원스텝',
+  openGraph: {
+    type: 'website',
+    locale: 'ko_KR',
+    siteName: '원스텝',
+    title: '원스텝',
+    description: '회원, 수업, 출석 관리를 위한 OneStep Training Center',
+    images: [
+      {
+        url: `/images/og-image.png?${assetVersionQuery}`,
+        width: 1200,
+        height: 630,
+        alt: '원스텝',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '원스텝',
+    description: '회원, 수업, 출석 관리를 위한 OneStep Training Center',
+    images: [`/images/og-image.png?${assetVersionQuery}`],
+  },
+  appleWebApp: {
+    capable: true,
+    title: '원스텝',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+    icons: {
+    icon: [
+      { url: `/icons/icon-32.png?${assetVersionQuery}`, sizes: '32x32', type: 'image/png' },
+      { url: `/favicon.ico?${assetVersionQuery}`, sizes: '48x48' },
+      { url: `/icons/icon-192.png?${assetVersionQuery}`, sizes: '192x192', type: 'image/png' },
+      { url: `/icons/icon-512.png?${assetVersionQuery}`, sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: `/icons/apple-icon.png?${assetVersionQuery}`, sizes: '180x180', type: 'image/png' },
+    ],
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#070d18',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
+  return (
+    <html
+      lang="ko"
+      suppressHydrationWarning
+      className={`dark bg-[#070d18] ${geistSans.variable} ${geistMono.variable}`}
+    >
+      <head>
+        <PwaSplashHeadLinks />
+        <script
+          dangerouslySetInnerHTML={{ __html: SPLASH_BOOT_SCRIPT }}
+        />
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              'html,body{background:#070d18!important;margin:0;padding:0}' +
+              'html.onestep-splash-active,html.onestep-splash-active body{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;height:100dvh;overscroll-behavior:none}' +
+              '#onestep-app-splash{position:fixed;inset:0;z-index:9999;width:100%;height:100%;height:100dvh;min-height:100dvh;min-height:-webkit-fill-available;opacity:1}',
+          }}
+        />
+      </head>
+      <body
+        className={`${geistSans.className} antialiased bg-[#070d18] text-foreground min-h-screen`}
+      >
+        <OnestepSplashLayer />
+        <PwaBootstrap />
+        <PwaInstallAffordance />
+        <div id="app-root" className="onestep-app-root">
+          {children}
+          <Toaster richColors position="top-center" />
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+        </div>
+      </body>
+    </html>
+  )
+}

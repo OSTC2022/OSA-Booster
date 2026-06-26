@@ -1,0 +1,353 @@
+'use client'
+
+import { useMemo, type ReactNode } from 'react'
+import { X } from 'lucide-react'
+import { MemberRankAspirationPanel } from '@/components/dashboard/member-rank-aspiration-panel'
+import { MemberRankingCharts, type GraphChartTab } from '@/components/dashboard/member-ranking-charts'
+import { Button } from '@/components/ui/button'
+import { formatPbDistanceLabel } from '@/lib/running-league/pb-distance-labels'
+import {
+  buildLeagueRankComparisonChart,
+  formatRankComparisonCaption,
+} from '@/lib/running-league/league-rank-comparison'
+import { buildMemberMileageHistorySeries } from '@/lib/running-league/mileage-history'
+import {
+  buildMemberAttendanceHistorySeries,
+  buildMemberAttendanceRankHistorySeries,
+} from '@/lib/running-league/attendance-history'
+import { aggregateAttendanceDaysByMember } from '@/lib/running-league/attendance-leaderboard'
+import { buildMemberMileageRankHistorySeries } from '@/lib/running-league/mileage-rank-history'
+import { buildMemberChaseComparisonChart } from '@/lib/running-league/league-chase-comparison'
+import { formatRankingMemberName } from '@/lib/running-league/mask-member-name'
+import type { PbLeaderboardDistance } from '@/lib/running-league/pb-leaderboard'
+import { buildMemberRankingHistorySeries } from '@/lib/running-league/ranking-history'
+import { buildMemberGraphPanelSummary } from '@/lib/running-league/ranking-improvement-summary'
+import type { MemberRunningLeagueRankingBundle } from '@/lib/actions/running-league'
+import { filterPortalPbTrendRecords } from '@/lib/running-league/ranking-hub'
+import { filterParticipantsByGender, type RankingGenderFilter } from '@/lib/running-league/ranking-gender'
+import { summarizeRecordChangeChart } from '@/lib/running-league/ranking-improvement-summary'
+import type { MemberGraphPanelSummary } from '@/lib/running-league/ranking-improvement-summary'
+import { cn } from '@/lib/utils'
+import { MEMBER_PORTAL_CARD_CLASS } from '@/lib/running-league/member-portal-layout'
+import type { RankAspirationInsight } from '@/lib/running-league/rank-aspiration'
+
+type RankingDetailView = 'pb' | 'mileage' | 'attendance' | 'chase'
+
+interface MemberRankingDetailPanelProps {
+  memberId: string
+  memberName: string
+  distance: PbLeaderboardDistance
+  rankingView?: RankingDetailView
+  genderFilter: RankingGenderFilter
+  rankingBundle: MemberRunningLeagueRankingBundle | null
+  highlightMemberId?: string | null
+  currentRank?: number | null
+  totalRanked?: number
+  isExplicitSelection?: boolean
+  emphasized?: boolean
+  embedded?: boolean
+  onClose?: () => void
+  className?: string
+  aspirationInsight?: RankAspirationInsight | null
+  soloComparisonHint?: string | null
+  variant?: 'default' | 'mobile'
+  mobileFilterSlot?: ReactNode
+  graphChartTab?: GraphChartTab
+  onGraphChartTabChange?: (tab: GraphChartTab) => void
+  chaseMemberId?: string | null
+}
+
+function MemberGraphSummaryHeader({
+  summary,
+  isMe,
+  isExplicitSelection,
+}: {
+  summary: ReturnType<typeof buildMemberGraphPanelSummary>
+  isMe: boolean
+  isExplicitSelection: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl border px-4 py-4',
+        isMe
+          ? 'border-lime-400/40 bg-lime-500/12'
+          : 'border-lime-500/25 bg-black/30',
+      )}
+    >
+      <div className="space-y-1.5">
+        <p className="text-xl font-bold leading-tight text-lime-50">
+          {formatRankingMemberName(summary.displayName, { isMe })}
+          {isMe && !isExplicitSelection ? (
+            <span className="ml-2 text-sm font-medium text-lime-300/80">나</span>
+          ) : null}
+        </p>
+        {summary.rankLine ? (
+          <p className="text-sm font-medium text-zinc-200">{summary.rankLine}</p>
+        ) : null}
+        {summary.recordLine ? (
+          <p className="text-sm tabular-nums text-lime-200/90">{summary.recordLine}</p>
+        ) : null}
+        {summary.improvementLine ? (
+          <p className="text-sm font-semibold text-lime-300">{summary.improvementLine}</p>
+        ) : null}
+      </div>
+      {isMe && !isExplicitSelection ? (
+        <p className="mt-3 text-xs text-zinc-500">기본으로 내 그래프가 표시됩니다. 다른 회원을 눌러 비교할 수 있어요.</p>
+      ) : null}
+    </div>
+  )
+}
+
+export function MemberRankingDetailPanel({
+  memberId,
+  memberName,
+  distance,
+  rankingView = 'pb',
+  genderFilter,
+  rankingBundle,
+  highlightMemberId,
+  currentRank = null,
+  totalRanked = 0,
+  isExplicitSelection = false,
+  emphasized = true,
+  embedded = false,
+  onClose,
+  className,
+  aspirationInsight = null,
+  soloComparisonHint = null,
+  variant = 'default',
+  mobileFilterSlot = null,
+  graphChartTab,
+  onGraphChartTabChange,
+  chaseMemberId = null,
+}: MemberRankingDetailPanelProps) {
+  const isMobile = variant === 'mobile'
+  const isMe = highlightMemberId != null && memberId === highlightMemberId
+
+  const portalPbRecords = useMemo(
+    () => (rankingBundle ? filterPortalPbTrendRecords(rankingBundle.pbRecords) : []),
+    [rankingBundle],
+  )
+
+  const historyPoints = useMemo(() => {
+    if (!rankingBundle) return []
+    const participants = filterParticipantsByGender(rankingBundle.participants, genderFilter)
+    return buildMemberRankingHistorySeries({
+      memberId,
+      distance,
+      participants,
+      records: portalPbRecords,
+    })
+  }, [distance, genderFilter, memberId, portalPbRecords, rankingBundle])
+
+  const filteredParticipants = useMemo(() => {
+    if (!rankingBundle) return []
+    return filterParticipantsByGender(rankingBundle.participants, genderFilter)
+  }, [genderFilter, rankingBundle])
+
+  const comparisonChart = useMemo(() => {
+    if (!rankingBundle) return null
+    return buildLeagueRankComparisonChart({
+      selectedMemberId: memberId,
+      distance,
+      participants: filteredParticipants,
+      records: portalPbRecords,
+      highlightMemberId,
+    })
+  }, [distance, filteredParticipants, highlightMemberId, memberId, portalPbRecords, rankingBundle])
+
+  const recordSummary = useMemo(
+    () => summarizeRecordChangeChart(historyPoints),
+    [historyPoints],
+  )
+
+  const rankCaption = useMemo(
+    () => formatRankComparisonCaption(historyPoints, formatPbDistanceLabel(distance)),
+    [distance, historyPoints],
+  )
+
+  const mileagePoints = useMemo(() => {
+    if (!rankingBundle) return []
+    return buildMemberMileageHistorySeries(memberId, rankingBundle.mileageLogs)
+  }, [memberId, rankingBundle])
+
+  const mileageRankPoints = useMemo(() => {
+    if (!rankingBundle) return []
+    return buildMemberMileageRankHistorySeries({
+      memberId,
+      participants: filteredParticipants,
+      logs: rankingBundle.mileageLogs,
+    })
+  }, [filteredParticipants, memberId, rankingBundle])
+
+  const attendancePoints = useMemo(() => {
+    if (!rankingBundle) return []
+    const { start, end } = rankingBundle.rankingPeriod
+    return buildMemberAttendanceHistorySeries(memberId, rankingBundle.mileageLogs, start, end)
+  }, [memberId, rankingBundle])
+
+  const attendanceRankPoints = useMemo(() => {
+    if (!rankingBundle) return []
+    const { start, end } = rankingBundle.rankingPeriod
+    return buildMemberAttendanceRankHistorySeries({
+      memberId,
+      participants: filteredParticipants,
+      logs: rankingBundle.mileageLogs,
+      periodStart: start,
+      periodEnd: end,
+    })
+  }, [filteredParticipants, memberId, rankingBundle])
+
+  const chaseComparisonChart = useMemo(() => {
+    if (!rankingBundle || !chaseMemberId) return null
+    return buildMemberChaseComparisonChart({
+      participants: filteredParticipants,
+      logs: rankingBundle.mileageLogs,
+      chaseMemberId,
+      memberId,
+    })
+  }, [chaseMemberId, filteredParticipants, memberId, rankingBundle])
+
+  const attendanceDays = useMemo(() => {
+    if (!rankingBundle || rankingView !== 'attendance') return null
+    const { start, end } = rankingBundle.rankingPeriod
+    return aggregateAttendanceDaysByMember(rankingBundle.mileageLogs, start, end).get(memberId) ?? 0
+  }, [memberId, rankingBundle, rankingView])
+
+  const chartMode =
+    rankingView === 'pb'
+      ? 'pb'
+      : rankingView === 'attendance'
+        ? 'attendance'
+        : rankingView === 'chase'
+          ? 'chase'
+          : 'mileage'
+
+  const graphSummary = useMemo(
+    () =>
+      buildMemberGraphPanelSummary({
+        memberName,
+        isMe,
+        rankingView,
+        distanceLabel: formatPbDistanceLabel(distance),
+        currentRank,
+        totalRanked,
+        historyPoints,
+        mileageTotalKm: mileagePoints[mileagePoints.length - 1]?.cumulativeKm ?? null,
+        attendanceDays,
+      }),
+    [
+      attendanceDays,
+      currentRank,
+      distance,
+      historyPoints,
+      isMe,
+      memberName,
+      mileagePoints,
+      rankingView,
+      totalRanked,
+    ],
+  )
+
+  return (
+    <div
+      className={cn(
+        'flex min-w-0 w-full flex-col overflow-hidden transition-all duration-300',
+        isMobile
+          ? cn(MEMBER_PORTAL_CARD_CLASS, className)
+          : cn(
+              'rounded-xl border',
+              embedded
+                ? cn(
+                    'bg-zinc-950/90',
+                    emphasized
+                      ? 'border-lime-400/45 shadow-[0_0_28px_rgba(163,230,53,0.12)] ring-2 ring-lime-400/20'
+                      : 'border-lime-500/25',
+                  )
+                : 'border-lime-400/35 bg-zinc-950/80 ring-1 ring-lime-400/15',
+              className,
+            ),
+      )}
+    >
+      {isMobile && onClose ? (
+        <div className="flex justify-end px-2.5 pt-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0 px-2 text-[11px] text-zinc-400 hover:text-lime-200"
+            onClick={onClose}
+          >
+            {isExplicitSelection ? '전체 그래프' : isMe ? '닫기' : '내 그래프'}
+          </Button>
+        </div>
+      ) : null}
+
+      {isMobile && mobileFilterSlot ? mobileFilterSlot : null}
+
+      {!isMobile ? (
+        <div className="flex items-start justify-between gap-3 border-b border-lime-500/15 px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-lime-300/80">그래프 · 성장 분석</p>
+            {!isMe && isExplicitSelection && onClose ? (
+              <p className="mt-0.5 text-[11px] text-zinc-500">다른 회원 보는 중</p>
+            ) : null}
+          </div>
+          {onClose ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0 text-zinc-400 hover:text-lime-200"
+              onClick={onClose}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              {isExplicitSelection ? '전체 그래프' : isMe ? '닫기' : '내 그래프'}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          'flex flex-1 flex-col',
+          isMobile ? 'gap-2 p-2.5' : 'gap-4 px-4 py-4 sm:px-5',
+        )}
+      >
+        {!isMobile ? (
+          <MemberGraphSummaryHeader
+            summary={graphSummary}
+            isMe={isMe}
+            isExplicitSelection={isExplicitSelection}
+          />
+        ) : null}
+
+        {isMe && aspirationInsight && !isMobile ? (
+          <MemberRankAspirationPanel insight={aspirationInsight} compact />
+        ) : null}
+
+        <MemberRankingCharts
+          key={`${memberId}-${rankingView}-${distance}`}
+          points={historyPoints}
+          mileagePoints={mileagePoints}
+          mileageRankPoints={mileageRankPoints}
+          attendancePoints={attendancePoints}
+          attendanceRankPoints={attendanceRankPoints}
+          chaseComparisonChart={chaseComparisonChart}
+          comparisonChart={comparisonChart}
+          recordSummary={recordSummary}
+          rankCaption={rankCaption}
+          mode={chartMode}
+          emphasized={emphasized}
+          soloComparisonHint={soloComparisonHint}
+          compact={isMobile}
+          activeTab={graphChartTab}
+          onActiveTabChange={onGraphChartTabChange}
+          chaseMemberId={chaseMemberId}
+          className="animate-in fade-in-0 duration-300"
+        />
+      </div>
+    </div>
+  )
+}
