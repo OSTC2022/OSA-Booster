@@ -201,7 +201,8 @@ export function MemberMyPage({
         </section>
       ) : null}
 
-      {showAdultMemberUsageSections ? (
+      {isAdultMember ? (
+        showAdultMemberUsageSections ? (
         <section className="space-y-4 border-t border-border/40 pt-4 sm:space-y-5 sm:pt-6">
           <div className="space-y-1">
             <h2 className="text-base font-semibold sm:text-lg">내 회원 정보</h2>
@@ -292,6 +293,7 @@ export function MemberMyPage({
             </CardContent>
           </Card>
         </section>
+        ) : null
       ) : (
         <>
           <Card className="border-primary/20 bg-primary/5">
