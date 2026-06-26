@@ -759,10 +759,10 @@ function RankingMemberNameCell({
   isPortalCoach?: boolean
 }) {
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+    <>
       <span
         className={cn(
-          'min-w-0 truncate font-medium',
+          'min-w-0 flex-1 truncate font-medium',
           rankingMemberNameClass(isMe, isSelected, Boolean(chaseBadgeLabel)),
         )}
       >
@@ -770,7 +770,7 @@ function RankingMemberNameCell({
       </span>
       {chaseBadgeLabel ? <PortalChaseBadge label={chaseBadgeLabel} /> : null}
       {isPortalCoach ? <PortalCoachBadge /> : null}
-    </span>
+    </>
   )
 }
 
@@ -1286,6 +1286,7 @@ function AttendanceRankingRow({
   onMemberSelect,
   isSelected,
   scrollAnchor = false,
+  showPeriodLabel = true,
 }: {
   row: AttendanceRankRow
   isMe: boolean
@@ -1295,6 +1296,7 @@ function AttendanceRankingRow({
   onMemberSelect?: (memberId: string, memberName: string) => void
   isSelected?: boolean
   scrollAnchor?: boolean
+  showPeriodLabel?: boolean
 }) {
   const isRowSelected = Boolean(isSelected)
 
@@ -1321,7 +1323,9 @@ function AttendanceRankingRow({
         chaseBadgeLabel={chaseBadgeLabel}
         isPortalCoach={isPortalCoach}
       />
-      <span className="shrink-0 text-xs text-zinc-500">이번 달</span>
+      {showPeriodLabel ? (
+        <span className="shrink-0 text-xs text-zinc-500">이번 달</span>
+      ) : null}
       <span
         className={cn('shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
       >
@@ -1561,6 +1565,7 @@ function MileageRankingList({
               onMemberSelect={onMemberSelect}
               isSelected={selectedMemberId === row.memberId}
               scrollAnchor={isMe}
+              showPeriodLabel={!showAllRanks}
             />
           )
         })}
@@ -1579,15 +1584,17 @@ function MileageRankingList({
               return (
               <div
                 key={row.participantId}
-                className="flex items-center justify-between rounded-lg border border-dashed border-zinc-700/80 bg-black/10 px-3 py-2 text-sm text-zinc-500"
+                className="flex items-center gap-2 rounded-lg border border-dashed border-zinc-700/80 bg-black/10 px-3 py-2 text-sm text-zinc-500"
               >
-                <RankingMemberNameCell
-                  memberName={row.memberName}
-                  isMe={highlightMemberId != null && row.memberId === highlightMemberId}
-                  isSelected={false}
-                  chaseBadgeLabel={chaseBadgeLabel}
-                  isPortalCoach={isPortalCoach}
-                />
+                <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <RankingMemberNameCell
+                    memberName={row.memberName}
+                    isMe={highlightMemberId != null && row.memberId === highlightMemberId}
+                    isSelected={false}
+                    chaseBadgeLabel={chaseBadgeLabel}
+                    isPortalCoach={isPortalCoach}
+                  />
+                </div>
                 <span className="shrink-0 text-xs tabular-nums">{formatMileageKmDisplay(0)}</span>
               </div>
             )})}
@@ -1692,6 +1699,7 @@ function AttendanceRankingList({
               onMemberSelect={onMemberSelect}
               isSelected={selectedMemberId === row.memberId}
               scrollAnchor={isMe}
+              showPeriodLabel={!showAllRanks}
             />
           )
         })}
@@ -1707,14 +1715,16 @@ function AttendanceRankingList({
               return (
               <div
                 key={row.participantId}
-                className="flex items-center justify-between rounded-lg border border-dashed border-zinc-700/80 bg-black/10 px-3 py-2 text-sm text-zinc-500"
+                className="flex items-center gap-2 rounded-lg border border-dashed border-zinc-700/80 bg-black/10 px-3 py-2 text-sm text-zinc-500"
               >
-                <RankingMemberNameCell
-                  memberName={row.memberName}
-                  isMe={highlightMemberId != null && row.memberId === highlightMemberId}
-                  isSelected={false}
-                  isPortalCoach={isPortalCoach}
-                />
+                <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <RankingMemberNameCell
+                    memberName={row.memberName}
+                    isMe={highlightMemberId != null && row.memberId === highlightMemberId}
+                    isSelected={false}
+                    isPortalCoach={isPortalCoach}
+                  />
+                </div>
                 <span className="shrink-0 text-xs">0일</span>
               </div>
             )})}
