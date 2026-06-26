@@ -758,18 +758,22 @@ function RankingMemberNameCell({
   isPortalCoach?: boolean
 }) {
   return (
-    <>
+    <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
       <span
         className={cn(
-          'min-w-0 flex-1 truncate font-medium',
+          'min-w-0 shrink truncate font-medium',
           rankingMemberNameClass(isMe, isSelected, Boolean(chaseBadgeLabel)),
         )}
       >
         {formatRankingMemberName(memberName, { isMe })}
       </span>
-      {chaseBadgeLabel ? <PortalChaseBadge label={chaseBadgeLabel} /> : null}
-      {isPortalCoach ? <PortalCoachBadge /> : null}
-    </>
+      {chaseBadgeLabel || isPortalCoach ? (
+        <span className="flex shrink-0 items-center gap-1">
+          {chaseBadgeLabel ? <PortalChaseBadge label={chaseBadgeLabel} /> : null}
+          {isPortalCoach ? <PortalCoachBadge /> : null}
+        </span>
+      ) : null}
+    </span>
   )
 }
 
