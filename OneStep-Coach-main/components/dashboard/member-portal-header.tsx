@@ -71,7 +71,7 @@ export function MemberPortalHeader({ user }: MemberPortalHeaderProps) {
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-14 max-w-[1120px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <Link href="/dashboard/my" className="flex min-w-0 items-center gap-2.5">
-          <BrandPulseAppIcon className="h-10 w-10" />
+          <BrandPulseAppIcon className="h-8 w-8" />
           <div className="min-w-0 leading-tight">
             <p className="truncate text-sm font-bold text-foreground">{brandLabel}</p>
             <p className="truncate text-[11px] text-muted-foreground">{title}</p>

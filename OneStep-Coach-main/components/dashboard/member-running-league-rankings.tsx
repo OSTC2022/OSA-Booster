@@ -345,13 +345,13 @@ function InlineRankingFilterStrip({
 
   return (
     <div className={cn(bordered && 'border-b border-lime-500/10', className)}>
-      <div className="flex min-w-0 flex-col gap-1.5 px-2.5 py-1.5 sm:flex-row sm:items-center sm:gap-2 sm:px-3">
+      <div className="flex min-w-0 items-center gap-2 px-2.5 py-1.5 sm:px-3">
         <div
-          className="flex min-w-0 w-full items-center gap-1 overflow-x-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:min-w-0 sm:flex-1"
+          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="toolbar"
           aria-label="랭킹 필터"
         >
-        <div className="grid w-full min-w-[17.5rem] max-w-[19rem] shrink-0 grid-cols-4 gap-0.5 rounded-md border border-lime-500/20 bg-black/40 p-0.5 sm:w-[19rem]">
+        <div className="grid w-[19rem] shrink-0 grid-cols-4 gap-0.5 rounded-md border border-lime-500/20 bg-black/40 p-0.5">
           {RANKING_VIEW_OPTIONS.map((item) => (
             <button
               key={item.value}
@@ -417,11 +417,15 @@ function InlineRankingFilterStrip({
         </div>
 
         {showRecordActions && onAddMileage && onAddPb ? (
-          <PortalGraphCompactActions
-            onAddMileage={onAddMileage}
-            onAddPb={onAddPb}
-            className="w-full justify-end sm:w-auto sm:shrink-0"
-          />
+          <>
+            <span className="hidden shrink-0 text-[10px] text-zinc-700 sm:inline" aria-hidden>
+              |
+            </span>
+            <PortalGraphCompactActions
+              onAddMileage={onAddMileage}
+              onAddPb={onAddPb}
+            />
+          </>
         ) : null}
       </div>
     </div>
@@ -431,14 +435,12 @@ function InlineRankingFilterStrip({
 function PortalGraphCompactActions({
   onAddMileage,
   onAddPb,
-  className,
 }: {
   onAddMileage: () => void
   onAddPb: () => void
-  className?: string
 }) {
   return (
-    <div className={cn('flex shrink-0 items-center gap-1', className)}>
+    <div className="flex shrink-0 items-center gap-1">
       <Button
         type="button"
         size="sm"
@@ -447,7 +449,7 @@ function PortalGraphCompactActions({
         aria-label="오늘 러닝 기록 추가"
       >
         <Plus className="h-3 w-3 shrink-0" />
-        <span className="whitespace-nowrap">기록 추가</span>
+        <span className="whitespace-nowrap">오늘 기록 추가</span>
       </Button>
       <Button
         type="button"
@@ -756,24 +758,18 @@ function RankingMemberNameCell({
   chaseBadgeLabel?: string | null
   isPortalCoach?: boolean
 }) {
-  const hasBadges = Boolean(chaseBadgeLabel) || isPortalCoach
-
   return (
-    <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 overflow-hidden sm:flex-row sm:items-center sm:gap-1.5">
+    <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
       <span
         className={cn(
-          'min-w-0 w-full truncate font-medium',
+          'min-w-0 truncate font-medium',
           rankingMemberNameClass(isMe, isSelected, Boolean(chaseBadgeLabel)),
         )}
       >
         {formatRankingMemberName(memberName, { isMe })}
       </span>
-      {hasBadges ? (
-        <span className="flex max-w-full shrink-0 items-center gap-1 overflow-hidden">
-          {chaseBadgeLabel ? <PortalChaseBadge label={chaseBadgeLabel} /> : null}
-          {isPortalCoach ? <PortalCoachBadge /> : null}
-        </span>
-      ) : null}
+      {chaseBadgeLabel ? <PortalChaseBadge label={chaseBadgeLabel} /> : null}
+      {isPortalCoach ? <PortalCoachBadge /> : null}
     </span>
   )
 }
@@ -1195,7 +1191,7 @@ function PbRankingRow({
       aria-current={isSelected ? 'true' : undefined}
       data-selected-member={isSelected ? 'true' : undefined}
       className={cn(
-        'flex min-w-0 w-full items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-sm transition-all duration-200 sm:gap-2 sm:px-3 sm:py-2.5',
+        'flex min-w-0 w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-200',
         topRankRowAccent(row.rank),
         rankingRowClass(isRowSelected),
       )}
@@ -1231,7 +1227,7 @@ function MileageRankingRow({
   onMemberSelect,
   isSelected,
   scrollAnchor = false,
-  showPeriodLabel = false,
+  showPeriodLabel = true,
 }: {
   row: MileageDistanceRankRow
   isMe: boolean
@@ -1254,7 +1250,7 @@ function MileageRankingRow({
       aria-current={isSelected ? 'true' : undefined}
       data-selected-member={isSelected ? 'true' : undefined}
       className={cn(
-        'flex min-w-0 w-full items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-sm transition-all duration-200 sm:gap-2 sm:px-3 sm:py-2.5',
+        'flex min-w-0 w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-200',
         topRankRowAccent(row.rank),
         rankingRowClass(isRowSelected),
       )}
@@ -1290,7 +1286,6 @@ function AttendanceRankingRow({
   onMemberSelect,
   isSelected,
   scrollAnchor = false,
-  showPeriodLabel = false,
 }: {
   row: AttendanceRankRow
   isMe: boolean
@@ -1300,7 +1295,6 @@ function AttendanceRankingRow({
   onMemberSelect?: (memberId: string, memberName: string) => void
   isSelected?: boolean
   scrollAnchor?: boolean
-  showPeriodLabel?: boolean
 }) {
   const isRowSelected = Boolean(isSelected)
 
@@ -1313,7 +1307,7 @@ function AttendanceRankingRow({
       aria-current={isSelected ? 'true' : undefined}
       data-selected-member={isSelected ? 'true' : undefined}
       className={cn(
-        'flex min-w-0 w-full items-center gap-1.5 rounded-lg border px-2.5 py-2 text-left text-sm transition-all duration-200 sm:gap-2 sm:px-3 sm:py-2.5',
+        'flex min-w-0 w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-200',
         topRankRowAccent(row.rank),
         rankingRowClass(isRowSelected),
       )}
@@ -1327,9 +1321,7 @@ function AttendanceRankingRow({
         chaseBadgeLabel={chaseBadgeLabel}
         isPortalCoach={isPortalCoach}
       />
-      {showPeriodLabel ? (
-        <span className="shrink-0 text-xs text-zinc-500">이번 달</span>
-      ) : null}
+      <span className="shrink-0 text-xs text-zinc-500">이번 달</span>
       <span
         className={cn('shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
       >

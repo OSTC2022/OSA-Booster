@@ -292,7 +292,7 @@ export function MemberMyPage({
             </CardContent>
           </Card>
         </section>
-      ) : !isAdultMember ? (
+      ) : (
         <>
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-4 sm:p-6">
@@ -394,7 +394,7 @@ export function MemberMyPage({
             />
           </div>
         </>
-      ) : null}
+      )}
 
       {showAdultMemberUsageSections || !isAdultMember ? (
       <Card className="border-primary/15">

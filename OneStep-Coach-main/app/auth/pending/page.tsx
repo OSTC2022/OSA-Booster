@@ -20,7 +20,7 @@ export default function PendingApprovalPage() {
           <div className="mx-auto w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center">
             <Clock className="w-8 h-8 text-amber-600" />
           </div>
-          <BrandPulseAppIcon className="mx-auto h-16 w-16 translate-y-2" />
+          <BrandPulseAppIcon className="mx-auto h-14 w-14 translate-y-1" />
           <div>
             <CardTitle className="text-2xl font-bold">승인 대기 중</CardTitle>
             <CardDescription className="text-muted-foreground mt-2">

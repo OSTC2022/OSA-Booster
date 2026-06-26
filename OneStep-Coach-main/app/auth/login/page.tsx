@@ -266,7 +266,7 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md relative z-10 border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">
-          <BrandPulseAppIcon className="mx-auto h-20 w-20 translate-y-2" />
+          <BrandPulseAppIcon className="mx-auto h-16 w-16 translate-y-1" />
           <div>
             <CardTitle className="text-2xl font-bold">OneStep Coach</CardTitle>
             <CardDescription className="text-muted-foreground">

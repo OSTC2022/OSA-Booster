@@ -51,7 +51,6 @@ export function AdultPortalBlindSettingsPanel({
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
             켜면 성인 회원 마이페이지에서{' '}
-            <span className="text-foreground/90">선수 프로필·수업권 요약</span>,{' '}
             <span className="text-foreground/90">내 회원 정보</span>,{' '}
             <span className="text-foreground/90">러닝 챌린지</span>,{' '}
             <span className="text-foreground/90">오늘 관리</span> 섹션이 보이지

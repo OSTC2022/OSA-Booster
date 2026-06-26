@@ -36,11 +36,25 @@ function PulseLine({ mirrored }: { mirrored?: boolean }) {
 function LogoMark() {
   return (
     <div className="flex shrink-0 flex-col items-center">
-      <BrandPulseAppIcon glow className="h-20 w-20 translate-y-2" />
+      <BrandPulseAppIcon glow className="h-16 w-16 translate-y-1" />
       <p className="mt-3 text-2xl font-bold tracking-tight text-foreground">원스텝</p>
       <p className="mt-1 text-[11px] font-medium tracking-wide text-foreground/75">
         One-Step Training Center
       </p>
+    </div>
+  )
+}
+
+function TaglineFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative mt-8 px-8 py-3 text-sm font-medium text-foreground/90">
+      <span aria-hidden className="pointer-events-none absolute inset-0">
+        <span className="absolute left-0 top-0 h-3.5 w-3.5 border-l-[1.5px] border-t-[1.5px] border-primary" />
+        <span className="absolute right-0 top-0 h-3.5 w-3.5 border-r-[1.5px] border-t-[1.5px] border-primary" />
+        <span className="absolute bottom-0 left-0 h-3.5 w-3.5 border-b-[1.5px] border-l-[1.5px] border-primary" />
+        <span className="absolute bottom-0 right-0 h-3.5 w-3.5 border-b-[1.5px] border-r-[1.5px] border-primary" />
+      </span>
+      {children}
     </div>
   )
 }
@@ -59,9 +73,8 @@ function SplashLoader() {
     <div className="flex flex-col items-center gap-4 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <div className="relative h-14 w-14" aria-hidden>
         <svg
-          className="h-full w-full animate-spin"
+          className="onestep-spinner h-full w-full"
           viewBox="0 0 50 50"
-          style={{ animationDuration: '1.1s' }}
         >
           <circle
             cx="25"
@@ -86,7 +99,7 @@ function SplashLoader() {
           />
         </svg>
       </div>
-      <p className="min-w-[8.5rem] text-center text-[11px] font-semibold tracking-[0.32em] text-foreground/85">
+      <p className="onestep-loading-label min-w-[8.5rem] text-center text-[11px] font-semibold tracking-[0.32em] text-foreground/85">
         LOADING{'.'.repeat(dots)}
       </p>
     </div>
@@ -97,22 +110,25 @@ type OnestepSplashScreenProps = {
   fading?: boolean
   fixed?: boolean
   className?: string
+  id?: string
 }
 
 export function OnestepSplashScreen({
   fading = false,
   fixed = false,
   className,
+  id,
 }: OnestepSplashScreenProps) {
   return (
     <div
+      id={id}
       role="status"
       aria-live="polite"
       aria-label="로딩 중"
       className={cn(
-        'relative flex min-h-svh w-full flex-col overflow-hidden bg-[#070d18] text-foreground',
+        'onestep-app-splash relative flex min-h-svh w-full flex-col overflow-hidden bg-[#070d18] text-foreground',
         fixed && 'fixed inset-0 z-[9999]',
-        fading && 'pointer-events-none opacity-0 transition-opacity duration-500',
+        fading && 'onestep-splash-fade-out pointer-events-none',
         className,
       )}
     >
@@ -122,26 +138,12 @@ export function OnestepSplashScreen({
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
         <div className="flex w-full max-w-md items-center justify-center gap-1 sm:gap-3">
-          <PulseLine />
-          <LogoMark />
           <PulseLine mirrored />
+          <LogoMark />
+          <PulseLine />
         </div>
 
-        <div className="relative mt-8 px-7 py-2 text-sm font-medium text-foreground/90">
-          <span
-            className="absolute left-0 top-0 text-lg leading-none text-primary"
-            aria-hidden
-          >
-            「
-          </span>
-          러닝 &amp; 트레이닝 센터
-          <span
-            className="absolute bottom-0 right-0 text-lg leading-none text-primary"
-            aria-hidden
-          >
-            」
-          </span>
-        </div>
+        <TaglineFrame>러닝 &amp; 트레이닝 센터</TaglineFrame>
       </div>
 
       <div className="relative z-10">

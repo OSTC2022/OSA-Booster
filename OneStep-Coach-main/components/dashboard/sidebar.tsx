@@ -296,7 +296,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
     <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link href="/dashboard" prefetch={false} className="flex items-center gap-3">
-          <BrandPulseAppIcon className="h-11 w-11" />
+          <BrandPulseAppIcon className="h-9 w-9" />
           <div>
             <h1 className="font-bold text-sidebar-foreground">OneStep Coach</h1>
             <p className="text-xs text-muted-foreground">트레이닝 관리</p>
