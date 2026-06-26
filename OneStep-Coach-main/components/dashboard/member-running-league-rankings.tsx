@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { MemberMileageLogDialog } from '@/components/dashboard/member-mileage-log-dialog'
 import { MemberRunningLeagueRankingsSkeleton } from '@/components/dashboard/member-running-league-rankings-skeleton'
 import { MemberRunningPbDialog } from '@/components/dashboard/member-running-pb-panel'
@@ -351,7 +351,7 @@ function InlineRankingFilterStrip({
           role="toolbar"
           aria-label="랭킹 필터"
         >
-        <div className="grid w-[19rem] shrink-0 grid-cols-4 gap-0.5 rounded-md border border-lime-500/20 bg-black/40 p-0.5">
+        <div className="inline-flex min-w-max shrink-0 items-center gap-0.5 rounded-md border border-lime-500/20 bg-black/40 p-0.5">
           {RANKING_VIEW_OPTIONS.map((item) => (
             <button
               key={item.value}
@@ -370,7 +370,7 @@ function InlineRankingFilterStrip({
                 }
               }}
               className={cn(
-                'min-w-0 rounded px-1 py-1.5 text-center text-[10px] font-medium leading-none transition-colors',
+                'shrink-0 whitespace-nowrap rounded px-1.5 py-1.5 text-[10px] font-medium leading-none [word-break:keep-all] sm:px-2 sm:text-[11px]',
                 rankingView === item.value
                   ? 'bg-lime-500/25 text-lime-100'
                   : 'text-zinc-500 hover:text-zinc-300',
@@ -444,12 +444,11 @@ function PortalGraphCompactActions({
       <Button
         type="button"
         size="sm"
-        className="h-7 gap-0.5 bg-lime-500 px-2 text-[10px] font-semibold text-black shadow-[0_0_10px_rgba(163,230,53,0.18)] hover:bg-lime-400 sm:h-8 sm:px-2.5 sm:text-[11px]"
+        className="h-7 shrink-0 bg-lime-500 px-2 text-[10px] font-semibold text-black shadow-[0_0_10px_rgba(163,230,53,0.18)] hover:bg-lime-400 sm:h-8 sm:px-2.5 sm:text-[11px]"
         onClick={onAddMileage}
-        aria-label="오늘 러닝 기록 추가"
+        aria-label="러닝 기록 추가"
       >
-        <Plus className="h-3 w-3 shrink-0" />
-        <span className="whitespace-nowrap">오늘 기록 추가</span>
+        <span className="whitespace-nowrap">기록 추가</span>
       </Button>
       <Button
         type="button"
