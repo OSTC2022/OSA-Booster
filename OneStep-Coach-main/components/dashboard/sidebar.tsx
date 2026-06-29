@@ -23,6 +23,7 @@ import {
   ClipboardList,
   UserCog,
   BarChart3,
+  Megaphone,
   Settings,
   MessageCircle,
   CreditCard,
@@ -46,6 +47,7 @@ import { shouldBackgroundPrefetch } from '@/lib/navigation-prefetch'
 import {
   getDefaultSidebarMenuOrder,
   getDefaultSidebarMenuHidden,
+  getSidebarMenuTitle,
   normalizeSidebarMenuOrder,
   normalizeSidebarMenuHidden,
   orderSidebarMenuItems,
@@ -75,6 +77,7 @@ const MENU_ICONS: Record<string, LucideIcon> = {
   '/dashboard/settings/center-contact': MessageCircle,
   '/dashboard/settings/adult-running-portal': Eye,
   '/dashboard/settings/running-schedule': CalendarDays,
+  '/dashboard/settings/adult-center-board': Megaphone,
   '/dashboard/settings': Settings,
 }
 
@@ -87,6 +90,9 @@ function isMenuItemActive(pathname: string, url: string) {
   }
   if (url === '/dashboard/settings/adult-running-portal') {
     return pathname.startsWith('/dashboard/settings/adult-running-portal')
+  }
+  if (url === '/dashboard/settings/adult-center-board') {
+    return pathname.startsWith('/dashboard/settings/adult-center-board')
   }
   return (
     pathname === url ||
@@ -196,6 +202,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
     const Icon = MENU_ICONS[item.id] ?? LayoutDashboard
     const isActive = isMenuItemActive(pathname, item.url)
     const isVisible = !hiddenSet.has(item.id)
+    const label = getSidebarMenuTitle(item, userRole)
 
     if (!inEditMode) {
       return (
@@ -215,7 +222,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
               }}
             >
               <Icon className={`h-4 w-4 ${isActive ? 'text-sidebar-primary' : ''}`} />
-              <span>{item.title}</span>
+              <span>{label}</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -242,7 +249,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
           <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing" />
           <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 truncate text-sm">
-            {item.title}
+            {label}
             {!isVisible ? (
               <span className="ml-1 text-[10px] text-muted-foreground">(숨김)</span>
             ) : null}

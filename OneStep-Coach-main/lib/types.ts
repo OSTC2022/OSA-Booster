@@ -1,7 +1,7 @@
 // Database types for OneStep Coach
 
-export type UserRole = 'admin' | 'instructor' | 'member' | 'guardian' | 'adult_member'
-export type ProfileRole = 'admin' | 'coach' | 'member' | 'guardian' | 'adult_member'
+export type UserRole = 'admin' | 'instructor' | 'member' | 'guardian' | 'adult_member' | 'operator'
+export type ProfileRole = 'admin' | 'coach' | 'member' | 'guardian' | 'adult_member' | 'operator'
 export type ProfileApprovalStatus = 'pending' | 'approved' | 'rejected'
 
 export interface User {

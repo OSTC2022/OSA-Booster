@@ -1,6 +1,7 @@
 'use server'
 
 import { requireRole } from '@/lib/actions/auth'
+import { ADMIN_OR_OPERATOR_ROLES } from '@/lib/operator-access'
 import { getMemberForCurrentUser } from '@/lib/actions/auth'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -1809,8 +1810,8 @@ async function addParticipantMileageDelta(
 async function assertStaffAdultRunningPortalAccess(memberId: string) {
   await requireMemberViewer()
   const linkedRole = await getMemberLinkedProfileRole(memberId)
-  if (linkedRole !== 'adult_member') {
-    throw new Error('성인회원으로 분류된 회원만 러닝 포털을 열 수 있습니다.')
+  if (linkedRole !== 'adult_member' && linkedRole !== 'operator') {
+    throw new Error('성인회원·운영진으로 분류된 회원만 러닝 포털을 열 수 있습니다.')
   }
 }
 
@@ -2177,7 +2178,7 @@ export async function getMemberRunningLeagueHomeForStaff(
 
 /** 설정 화면 — 성인회원 포털 미리보기(랭킹·스케줄) */
 export async function getAdultRunningPortalAdminPreview(): Promise<MemberRunningLeagueHome> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   return fetchMemberRunningLeagueHome(null, { rankingsOnly: true })
 }
 

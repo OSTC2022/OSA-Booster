@@ -1,11 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/actions/auth'
+import { requireAuth, requireRole } from '@/lib/actions/auth'
+import { ADMIN_OR_OPERATOR_ROLES, isOperatorApprovalRoleAllowed } from '@/lib/operator-access'
 import {
   appRoleToProfileRole,
   getRoleLabel,
   profileRoleToAppRole,
+  profileRoleToLegacyUsersRole,
 } from '@/lib/roles'
 import { formatLoginEmailForDisplay } from '@/lib/auth-email'
 import {
@@ -32,12 +34,6 @@ import type { ProfileApprovalStatus, ProfileRole } from '@/lib/types'
 
 function toProfileRole(role: SettingsAssignableRole): ProfileRole {
   return appRoleToProfileRole(role)
-}
-
-function toLegacyUsersRole(profileRole: ProfileRole): string {
-  if (profileRole === 'coach') return 'instructor'
-  if (profileRole === 'guardian' || profileRole === 'adult_member') return 'member'
-  return profileRole
 }
 
 function toAuthMetadataRole(profileRole: ProfileRole): string {
@@ -158,7 +154,7 @@ async function syncLegacyUser(
       id: userId,
       email,
       full_name: fullName,
-      role: toLegacyUsersRole(profileRole),
+      role: profileRoleToLegacyUsersRole(profileRole),
     },
     { onConflict: 'id' },
   )
@@ -258,7 +254,7 @@ async function unlinkInstructorUser(
 }
 
 export async function listInstructorsForSettings(): Promise<InstructorRoleRow[]> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const admin = createServiceRoleClient()
   const { data: instructors, error } = await admin
@@ -459,7 +455,17 @@ export async function updateAccountRole(
   role: SettingsAssignableRole,
   options?: UpdateAccountRoleOptions,
 ): Promise<{ error?: string }> {
-  const currentUser = await requireRole(['admin'])
+  const currentUser = await requireAuth()
+  if (currentUser.role === 'operator') {
+    if (!options?.skipApprovalCheck) {
+      return { error: '권한이 없습니다.' }
+    }
+    if (!isOperatorApprovalRoleAllowed(role)) {
+      return { error: '해당 권한은 부여할 수 없습니다.' }
+    }
+  } else if (currentUser.role !== 'admin') {
+    return { error: '권한이 없습니다.' }
+  }
 
   if (userId === currentUser.id && role !== 'instructor') {
     return { error: '본인 계정의 권한은 여기서 변경할 수 없습니다.' }
@@ -537,7 +543,11 @@ export async function updateAccountRole(
       existing.email,
     )
     if (link.error) return link
-  } else if (profileRole === 'member' || profileRole === 'adult_member') {
+  } else if (
+    profileRole === 'member' ||
+    profileRole === 'adult_member' ||
+    profileRole === 'operator'
+  ) {
     await unlinkInstructorUser(admin, userId)
     const memberId = options?.memberId?.trim()
     if (memberId) {

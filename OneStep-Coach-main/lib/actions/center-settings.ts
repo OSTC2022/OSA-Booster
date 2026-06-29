@@ -1,6 +1,7 @@
 'use server'
 
-import { requireRole } from '@/lib/actions/auth'
+import { isOperatorApprovalRoleAllowed, filterCenterSettingsForOperator } from '@/lib/operator-access'
+import { requireAuth } from '@/lib/actions/auth'
 import {
   getCenterSettingsCached,
 } from '@/lib/data/center-settings-read'
@@ -125,102 +126,107 @@ export async function updateCenterSettings(formData: {
   adult_portal_chase_label?: string | null
   adult_portal_notice?: string | null
 }): Promise<{ data?: CenterSettings; error?: string }> {
-  await requireRole(['admin'])
+  const user = await requireAuth()
+  const input =
+    user.role === 'operator' ? filterCenterSettingsForOperator(formData) : formData
+  if (user.role !== 'admin' && user.role !== 'operator') {
+    return { error: '권한이 없습니다.' }
+  }
   const supabase = await settingsClient()
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   }
 
-  if (formData.name !== undefined) {
-    updateData.name = formData.name.trim() || '센터'
+  if (input.name !== undefined) {
+    updateData.name = input.name.trim() || '센터'
   }
-  if (formData.kakao_id !== undefined) {
-    updateData.kakao_id = normalizeOptionalString(formData.kakao_id)
+  if (input.kakao_id !== undefined) {
+    updateData.kakao_id = normalizeOptionalString(input.kakao_id)
   }
-  if (formData.instagram_id !== undefined) {
-    updateData.instagram_id = normalizeOptionalString(formData.instagram_id)
+  if (input.instagram_id !== undefined) {
+    updateData.instagram_id = normalizeOptionalString(input.instagram_id)
   }
-  if (formData.blog_url !== undefined) {
-    updateData.blog_url = normalizeOptionalString(formData.blog_url)
+  if (input.blog_url !== undefined) {
+    updateData.blog_url = normalizeOptionalString(input.blog_url)
   }
-  if (formData.center_phone !== undefined) {
-    updateData.center_phone = normalizeOptionalString(formData.center_phone)
+  if (input.center_phone !== undefined) {
+    updateData.center_phone = normalizeOptionalString(input.center_phone)
   }
-  if (formData.naver_place_url !== undefined) {
-    updateData.naver_place_url = normalizeOptionalString(formData.naver_place_url)
+  if (input.naver_place_url !== undefined) {
+    updateData.naver_place_url = normalizeOptionalString(input.naver_place_url)
   }
-  if (formData.center_address !== undefined) {
-    updateData.center_address = normalizeOptionalString(formData.center_address)
+  if (input.center_address !== undefined) {
+    updateData.center_address = normalizeOptionalString(input.center_address)
   }
-  if (formData.business_hours !== undefined) {
-    updateData.business_hours = normalizeOptionalString(formData.business_hours)
+  if (input.business_hours !== undefined) {
+    updateData.business_hours = normalizeOptionalString(input.business_hours)
   }
-  if (formData.show_instructor_contact !== undefined) {
-    updateData.show_instructor_contact = formData.show_instructor_contact
+  if (input.show_instructor_contact !== undefined) {
+    updateData.show_instructor_contact = input.show_instructor_contact
   }
-  if (formData.adult_portal_blind_member_usage !== undefined) {
-    updateData.adult_portal_blind_member_usage = formData.adult_portal_blind_member_usage
+  if (input.adult_portal_blind_member_usage !== undefined) {
+    updateData.adult_portal_blind_member_usage = input.adult_portal_blind_member_usage
   }
-  if (formData.adult_portal_brand_eyebrow !== undefined) {
-    updateData.adult_portal_brand_eyebrow = normalizeOptionalString(formData.adult_portal_brand_eyebrow)
+  if (input.adult_portal_brand_eyebrow !== undefined) {
+    updateData.adult_portal_brand_eyebrow = normalizeOptionalString(input.adult_portal_brand_eyebrow)
   }
-  if (formData.adult_portal_brand_title !== undefined) {
-    updateData.adult_portal_brand_title = normalizeOptionalString(formData.adult_portal_brand_title)
+  if (input.adult_portal_brand_title !== undefined) {
+    updateData.adult_portal_brand_title = normalizeOptionalString(input.adult_portal_brand_title)
   }
-  if (formData.adult_portal_brand_eyebrow_color !== undefined) {
+  if (input.adult_portal_brand_eyebrow_color !== undefined) {
     updateData.adult_portal_brand_eyebrow_color = normalizeOptionalString(
-      formData.adult_portal_brand_eyebrow_color,
+      input.adult_portal_brand_eyebrow_color,
     )
   }
-  if (formData.adult_portal_brand_title_color !== undefined) {
+  if (input.adult_portal_brand_title_color !== undefined) {
     updateData.adult_portal_brand_title_color = normalizeOptionalString(
-      formData.adult_portal_brand_title_color,
+      input.adult_portal_brand_title_color,
     )
   }
-  if (formData.adult_portal_brand_eyebrow_size !== undefined) {
+  if (input.adult_portal_brand_eyebrow_size !== undefined) {
     updateData.adult_portal_brand_eyebrow_size = normalizeOptionalString(
-      formData.adult_portal_brand_eyebrow_size,
+      input.adult_portal_brand_eyebrow_size,
     )
   }
-  if (formData.adult_portal_brand_title_size !== undefined) {
+  if (input.adult_portal_brand_title_size !== undefined) {
     updateData.adult_portal_brand_title_size = normalizeOptionalString(
-      formData.adult_portal_brand_title_size,
+      input.adult_portal_brand_title_size,
     )
   }
-  if (formData.adult_portal_brand_eyebrow_weight !== undefined) {
+  if (input.adult_portal_brand_eyebrow_weight !== undefined) {
     updateData.adult_portal_brand_eyebrow_weight = normalizeOptionalString(
-      formData.adult_portal_brand_eyebrow_weight,
+      input.adult_portal_brand_eyebrow_weight,
     )
   }
-  if (formData.adult_portal_brand_title_weight !== undefined) {
+  if (input.adult_portal_brand_title_weight !== undefined) {
     updateData.adult_portal_brand_title_weight = normalizeOptionalString(
-      formData.adult_portal_brand_title_weight,
+      input.adult_portal_brand_title_weight,
     )
   }
-  if (formData.adult_portal_brand_hidden !== undefined) {
-    updateData.adult_portal_brand_hidden = formData.adult_portal_brand_hidden
+  if (input.adult_portal_brand_hidden !== undefined) {
+    updateData.adult_portal_brand_hidden = input.adult_portal_brand_hidden
   }
-  if (formData.adult_portal_ranking_period_start !== undefined) {
+  if (input.adult_portal_ranking_period_start !== undefined) {
     updateData.adult_portal_ranking_period_start = normalizeOptionalString(
-      formData.adult_portal_ranking_period_start,
+      input.adult_portal_ranking_period_start,
     )
   }
-  if (formData.adult_portal_ranking_period_end !== undefined) {
+  if (input.adult_portal_ranking_period_end !== undefined) {
     updateData.adult_portal_ranking_period_end = normalizeOptionalString(
-      formData.adult_portal_ranking_period_end,
+      input.adult_portal_ranking_period_end,
     )
   }
-  if (formData.adult_portal_chase_member_id !== undefined) {
+  if (input.adult_portal_chase_member_id !== undefined) {
     updateData.adult_portal_chase_member_id = normalizeOptionalString(
-      formData.adult_portal_chase_member_id,
+      input.adult_portal_chase_member_id,
     )
   }
-  if (formData.adult_portal_chase_label !== undefined) {
-    updateData.adult_portal_chase_label = normalizeOptionalString(formData.adult_portal_chase_label)
+  if (input.adult_portal_chase_label !== undefined) {
+    updateData.adult_portal_chase_label = normalizeOptionalString(input.adult_portal_chase_label)
   }
-  if (formData.adult_portal_notice !== undefined) {
-    updateData.adult_portal_notice = normalizeOptionalString(formData.adult_portal_notice)
+  if (input.adult_portal_notice !== undefined) {
+    updateData.adult_portal_notice = normalizeOptionalString(input.adult_portal_notice)
   }
 
   const updatedFields = Object.keys(updateData).filter((key) => key !== 'updated_at')

@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { requireRole } from '@/lib/actions/auth'
 import { assignCoachRoleToInstructor } from '@/lib/actions/settings-accounts'
 import { isProtectedAdminAccount } from '@/lib/protected-admin'
-import { appRoleToProfileRole, profileRoleToAppRole, getRoleLabel } from '@/lib/roles'
+import { appRoleToProfileRole, profileRoleToAppRole, getRoleLabel, profileRoleToLegacyUsersRole } from '@/lib/roles'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import {
   fetchAllProfiles,
@@ -18,10 +18,11 @@ import { resolveApprovalStatus } from '@/lib/profile-approval'
 import {
   executePublicSignup,
 } from '@/lib/auth/public-signup'
-import type { SettingsAssignableRole } from '@/lib/settings-accounts-types'
+import { ADMIN_OR_OPERATOR_ROLES, isOperatorApprovalRoleAllowed } from '@/lib/operator-access'
 import {
   parseSignupMemberTypeFromMemo,
   requiresMemberLinkRole,
+  type SettingsAssignableRole,
 } from '@/lib/settings-accounts-types'
 
 export type PendingAccountRow = {
@@ -50,7 +51,7 @@ export async function signUpPublic(
 }
 
 export async function listPendingAccounts(): Promise<PendingAccountRow[]> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const admin = createServiceRoleClient()
   const ordered = { ascending: false as const }
@@ -220,7 +221,10 @@ export async function approveAccount(
   memberId?: string | null,
   grantPortalCoach = false,
 ): Promise<{ error?: string; loginEmail?: string }> {
-  await requireRole(['admin'])
+  const approver = await requireRole(ADMIN_OR_OPERATOR_ROLES)
+  if (approver.role === 'operator' && !isOperatorApprovalRoleAllowed(role)) {
+    return { error: '관리자 권한은 부여할 수 없습니다.' }
+  }
 
   const admin = createServiceRoleClient()
   let resolvedMemberId = memberId?.trim() || null
@@ -320,12 +324,7 @@ export async function approveAccount(
       id: userId,
       email: profile.email,
       full_name: profile.full_name,
-      role:
-        role === 'instructor'
-          ? 'instructor'
-          : role === 'guardian' || role === 'adult_member'
-            ? 'member'
-            : role,
+      role: profileRoleToLegacyUsersRole(appRoleToProfileRole(role)),
     },
     { onConflict: 'id' },
   )
@@ -352,7 +351,7 @@ export async function approveAccount(
 }
 
 export async function rejectAccount(userId: string): Promise<{ error?: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const admin = createServiceRoleClient()
   const allProfiles = await fetchAllProfiles(admin)

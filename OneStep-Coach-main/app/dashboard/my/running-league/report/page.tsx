@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { getMemberRunningLeagueView } from '@/lib/actions/running-league'
 import { getDashboardProfile } from '@/lib/auth/dashboard-user'
+import { isAdultPortalUser } from '@/lib/member-portal-routes'
 import { RunningLeagueMemberReportCard } from '@/components/dashboard/running-league-member-report-card'
 import { Button } from '@/components/ui/button'
 
@@ -10,7 +11,7 @@ export default async function MyRunningLeagueReportPage() {
   const profile = await getDashboardProfile()
   if (!profile) redirect('/auth/login')
 
-  if (profile.role !== 'adult_member' && profile.role !== 'admin') {
+  if (!isAdultPortalUser(profile.role) && profile.role !== 'admin') {
     redirect('/dashboard/my')
   }
 

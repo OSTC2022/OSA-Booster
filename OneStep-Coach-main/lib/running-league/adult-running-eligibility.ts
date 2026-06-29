@@ -44,6 +44,7 @@ export function isAdultRunningLeagueMember(
   if (linkedUserId) {
     const role = profileRoleByUserId.get(linkedUserId)
     if (role === 'adult_member') return true
+    if (role === 'operator') return true
     if (role === 'member' || role === 'guardian') return false
     if (role === 'admin' || role === 'coach') return false
   }

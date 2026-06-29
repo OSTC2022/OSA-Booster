@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CalendarDays, ClipboardList, Home, LineChart, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isAdultPortalUser } from '@/lib/member-portal-routes'
 
 const ATHLETE_NAV_ITEMS = [
   {
@@ -71,7 +72,7 @@ interface MemberPortalBottomNavProps {
 export function MemberPortalBottomNav({ role }: MemberPortalBottomNavProps) {
   const pathname = usePathname()
   const [hash, setHash] = useState('')
-  const isAdultMember = role === 'adult_member'
+  const isAdultMember = isAdultPortalUser(role)
 
   const navItems = useMemo(
     () => (isAdultMember ? ADULT_NAV_ITEMS : ATHLETE_NAV_ITEMS),

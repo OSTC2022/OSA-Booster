@@ -5,13 +5,14 @@ import type { ProfileApprovalStatus, ProfileRole } from '@/lib/types'
 export type SettingsAssignableRole =
   | 'member'
   | 'adult_member'
+  | 'operator'
   | 'instructor'
   | 'guardian'
   | 'admin'
 
 /** 회원 프로필 연결이 필요한 권한 */
 export function requiresMemberLinkRole(role: SettingsAssignableRole): boolean {
-  return role === 'member' || role === 'adult_member'
+  return role === 'member' || role === 'adult_member' || role === 'operator'
 }
 
 export function parseSignupMemberTypeFromMemo(

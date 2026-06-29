@@ -18,6 +18,7 @@ import {
   requiresMemberLinkRole,
   resolveDefaultApproveRole,
 } from '@/lib/settings-accounts-types'
+import { isOperatorApprovalRoleAllowed } from '@/lib/operator-access'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -50,6 +51,7 @@ import { formatBirthDateDisplay } from '@/lib/member-utils'
 const APPROVE_ROLES: { value: SettingsAssignableRole; label: string }[] = [
   { value: 'member', label: '회원' },
   { value: 'adult_member', label: '성인회원' },
+  { value: 'operator', label: '운영진' },
   { value: 'guardian', label: '학부모' },
   { value: 'admin', label: '관리자' },
   { value: 'instructor', label: '강사' },
@@ -72,11 +74,13 @@ function formatDate(iso: string) {
 interface PendingApprovalsPanelProps {
   initialPending: PendingAccountRow[]
   instructors: InstructorRoleRow[]
+  operatorMode?: boolean
 }
 
 export function PendingApprovalsPanel({
   initialPending,
   instructors,
+  operatorMode = false,
 }: PendingApprovalsPanelProps) {
   const router = useRouter()
   const [pending, setPending] = useState(initialPending)
@@ -107,6 +111,14 @@ export function PendingApprovalsPanel({
   const unlinkedInstructors = useMemo(
     () => instructors.filter((i) => i.is_active && !i.hasCoachAccess),
     [instructors],
+  )
+
+  const approveRoleOptions = useMemo(
+    () =>
+      operatorMode
+        ? APPROVE_ROLES.filter((r) => isOperatorApprovalRoleAllowed(r.value))
+        : APPROVE_ROLES,
+    [operatorMode],
   )
 
   async function refresh() {
@@ -332,17 +344,18 @@ export function PendingApprovalsPanel({
                 <Select
                   value={approveRole}
                   onValueChange={(v) => {
-                    setApproveRole(v as SettingsAssignableRole)
-                    if (v !== 'instructor') setInstructorId('')
-                    if (v !== 'member' && v !== 'adult_member') setMemberId('')
-                    if (v !== 'adult_member') setGrantPortalCoach(false)
+                    const role = v as SettingsAssignableRole
+                    setApproveRole(role)
+                    if (role !== 'instructor') setInstructorId('')
+                    if (!requiresMemberLinkRole(role)) setMemberId('')
+                    if (role !== 'adult_member') setGrantPortalCoach(false)
                   }}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {APPROVE_ROLES.map((r) => (
+                    {approveRoleOptions.map((r) => (
                       <SelectItem key={r.value} value={r.value}>
                         {r.label}
                       </SelectItem>

@@ -10,7 +10,7 @@ import { MemberPortalScrollHandler } from '@/components/dashboard/member-portal-
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import {
   isMemberPortalPath,
-  isMemberPortalRole,
+  usesMemberPortalShell,
 } from '@/lib/member-portal-routes'
 import type { User } from '@/lib/types'
 import { VisualViewportOffsetHandler } from '@/components/visual-viewport-offset-handler'
@@ -23,7 +23,7 @@ interface DashboardShellProps {
 export function DashboardShell({ user, children }: DashboardShellProps) {
   const pathname = usePathname()
   const memberPortal =
-    isMemberPortalRole(user.role) && isMemberPortalPath(pathname)
+    usesMemberPortalShell(user.role) && isMemberPortalPath(pathname)
 
   if (memberPortal) {
     return (
@@ -43,7 +43,10 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
   }
 
   return (
-    <SidebarProvider className="flex min-h-svh w-full min-w-0 overflow-x-clip">
+    <SidebarProvider
+      defaultOpen={user.role !== 'operator'}
+      className="flex min-h-svh w-full min-w-0 overflow-x-clip"
+    >
       <VisualViewportOffsetHandler />
       <DashboardSidebar user={user} />
       <SidebarInset className="flex h-svh max-h-svh min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">

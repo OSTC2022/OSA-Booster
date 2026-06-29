@@ -1,22 +1,36 @@
 import type { AttendanceStatus, UserRole as DbUserRole } from '@/lib/types'
 
+import { canOperatorAccessPath } from '@/lib/operator-access'
+
 /** DB profile roles */
-export type ProfileRole = 'admin' | 'coach' | 'member' | 'guardian' | 'adult_member'
+export type ProfileRole = 'admin' | 'coach' | 'member' | 'guardian' | 'adult_member' | 'operator'
 
 /** App navigation roles (coach shown as instructor in legacy UI) */
-export type AppRole = 'admin' | 'instructor' | 'member' | 'guardian' | 'adult_member'
+export type AppRole = 'admin' | 'instructor' | 'member' | 'guardian' | 'adult_member' | 'operator'
 
 export function profileRoleToAppRole(role: ProfileRole | DbUserRole | string | null): AppRole {
   if (role === 'coach' || role === 'instructor') return 'instructor'
   if (role === 'admin') return 'admin'
   if (role === 'guardian') return 'guardian'
   if (role === 'adult_member') return 'adult_member'
+  if (role === 'operator') return 'operator'
   return 'member'
 }
 
 export function appRoleToProfileRole(role: AppRole): ProfileRole {
   if (role === 'instructor') return 'coach'
   return role
+}
+
+/** public.users CHECK — admin | instructor | member */
+export type LegacyUsersRole = 'admin' | 'instructor' | 'member'
+
+export function profileRoleToLegacyUsersRole(
+  role: ProfileRole | DbUserRole | string | null | undefined,
+): LegacyUsersRole {
+  if (role === 'admin') return 'admin'
+  if (role === 'coach' || role === 'instructor') return 'instructor'
+  return 'member'
 }
 
 export function getRoleLabel(role: AppRole): string {
@@ -29,6 +43,8 @@ export function getRoleLabel(role: AppRole): string {
       return '학부모'
     case 'adult_member':
       return '성인회원'
+    case 'operator':
+      return '운영진'
     default:
       return '회원'
   }
@@ -39,6 +55,7 @@ export function getDefaultDashboardPath(role: AppRole): string {
     case 'member':
     case 'guardian':
     case 'adult_member':
+    case 'operator':
       return '/dashboard/my'
     default:
       return '/dashboard'
@@ -110,6 +127,10 @@ export function isMemberPortalPath(pathname: string): boolean {
 
 export function canAccessPath(role: AppRole, pathname: string): boolean {
   if (role === 'admin') return true
+
+  if (role === 'operator') {
+    return canOperatorAccessPath(pathname)
+  }
 
   if (role === 'member' || role === 'guardian' || role === 'adult_member') {
     return isMemberPortalPath(pathname)

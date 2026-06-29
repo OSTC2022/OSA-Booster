@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Building2, CalendarDays, CalendarSync, Eye, HardDrive, Megaphone, Trophy, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isOperatorSettingsNavHref } from '@/lib/operator-access'
+import type { UserRole } from '@/lib/types'
 
 const SETTINGS_TABS = [
   {
@@ -73,12 +75,16 @@ const SETTINGS_TABS = [
   },
 ] as const
 
-export function SettingsNav() {
+export function SettingsNav({ userRole }: { userRole: UserRole }) {
   const pathname = usePathname()
+  const tabs =
+    userRole === 'operator'
+      ? SETTINGS_TABS.filter((tab) => isOperatorSettingsNavHref(tab.href))
+      : SETTINGS_TABS
 
   return (
     <nav className="flex gap-2 overflow-x-auto border-b border-border pb-px">
-      {SETTINGS_TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active = tab.isActive(pathname)
         const Icon = tab.icon
         return (

@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation'
 import { getCenterBoardPostsForAdmin } from '@/lib/actions/center-board'
 import { requireDashboardProfile } from '@/lib/auth/dashboard-user'
+import { canAccessSettingsArea } from '@/lib/operator-access'
 import { CenterBoardPanel } from '@/components/settings/center-board-panel'
 
 export default async function AdultCenterBoardSettingsPage() {
   const user = await requireDashboardProfile()
-  if (user.role !== 'admin') redirect('/unauthorized')
+  if (!canAccessSettingsArea(user.role)) redirect('/unauthorized')
 
   const posts = await getCenterBoardPostsForAdmin(undefined, 'adult')
 

@@ -1,5 +1,6 @@
 'use server'
 
+import { ADMIN_OR_OPERATOR_ROLES } from '@/lib/operator-access'
 import { requireRole } from '@/lib/actions/auth'
 import { getDashboardProfile } from '@/lib/auth/dashboard-user'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
@@ -30,7 +31,7 @@ function normalizeOptionalDate(value?: string | null): string | null {
 function boardAudienceForRole(
   role: string | null | undefined,
 ): CenterBoardAudience {
-  return role === 'adult_member' ? 'adult' : 'general'
+  return role === 'adult_member' || role === 'operator' ? 'adult' : 'general'
 }
 
 function mapRow(row: Record<string, unknown>): CenterBoardPost {
@@ -100,7 +101,7 @@ export async function getCenterBoardPostsForAdmin(
   kind?: CenterBoardKind,
   audience: CenterBoardAudience = 'general',
 ): Promise<CenterBoardPost[]> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   const supabase = await boardClient()
 
   let query = supabase
@@ -135,7 +136,7 @@ export async function createCenterBoardPost(input: {
   is_published?: boolean
   pinned?: boolean
 }): Promise<{ data?: CenterBoardPost; error?: string }> {
-  const user = await requireRole(['admin'])
+  const user = await requireRole(ADMIN_OR_OPERATOR_ROLES)
   const supabase = await boardClient()
   const title = input.title.trim()
   if (!title) return { error: '제목을 입력해주세요.' }
@@ -193,7 +194,7 @@ export async function updateCenterBoardPost(
     pinned?: boolean
   },
 ): Promise<{ data?: CenterBoardPost; error?: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   const supabase = await boardClient()
 
   const update: Record<string, unknown> = {
@@ -239,7 +240,7 @@ export async function updateCenterBoardPost(
 export async function deleteCenterBoardPost(
   id: string,
 ): Promise<{ error?: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   const supabase = await boardClient()
 
   const { data: existing } = await supabase

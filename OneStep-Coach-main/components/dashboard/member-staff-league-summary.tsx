@@ -84,7 +84,7 @@ export function MemberStaffLeagueSummary({
             className="h-9 text-xs text-zinc-400 hover:text-lime-200"
             onClick={() => setPbDialogOpen(true)}
           >
-            PB 등록/수정
+            PB 등록
           </Button>
         </div>
       ) : null}

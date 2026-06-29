@@ -21,10 +21,11 @@ import { UserAvatar } from '@/components/dashboard/user-avatar'
 import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { ShareWebsiteButton } from '@/components/pwa/share-website-button'
 import type { User } from '@/lib/types'
+import { isAdultPortalUser } from '@/lib/member-portal-routes'
 import { toast } from 'sonner'
 
 function portalTitle(pathname: string, hash: string, role?: string | null): string {
-  const isAdult = role === 'adult_member'
+  const isAdult = isAdultPortalUser(role)
   if (pathname.startsWith('/dashboard/my/running-league')) return '러닝 챌린지'
   if (pathname.startsWith('/dashboard/my/profile')) return '프로필'
   if (pathname.startsWith('/dashboard/my/body')) {
@@ -35,7 +36,7 @@ function portalTitle(pathname: string, hash: string, role?: string | null): stri
 }
 
 function portalBrandLabel(role?: string | null): string {
-  return role === 'adult_member' ? 'ONE STEP ATHLETICS' : 'OneStep Athlete'
+  return isAdultPortalUser(role) ? 'ONE STEP ATHLETICS' : 'OneStep Athlete'
 }
 
 interface MemberPortalHeaderProps {
@@ -83,12 +84,12 @@ export function MemberPortalHeader({ user }: MemberPortalHeaderProps) {
         <MemberBoardPopover
           userId={user.id}
           kind="notice"
-          audience={user.role === 'adult_member' ? 'adult' : 'general'}
+          audience={isAdultPortalUser(user.role) ? 'adult' : 'general'}
         />
         <MemberBoardPopover
           userId={user.id}
           kind="event"
-          audience={user.role === 'adult_member' ? 'adult' : 'general'}
+          audience={isAdultPortalUser(user.role) ? 'adult' : 'general'}
         />
 
         <NotificationBell userId={user.id} />

@@ -69,6 +69,7 @@ const ASSIGNABLE_ROLES: {
 }[] = [
   { value: 'member', label: '회원' },
   { value: 'adult_member', label: '성인회원' },
+  { value: 'operator', label: '운영진' },
   { value: 'guardian', label: '학부모' },
   { value: 'admin', label: '관리자' },
   { value: 'instructor', label: '강사' },
@@ -144,6 +145,7 @@ function appRoleToAssignable(account: RegisteredAccount): SettingsAssignableRole
   if (account.appRole === 'guardian') return 'guardian'
   if (account.appRole === 'admin') return 'admin'
   if (account.appRole === 'adult_member') return 'adult_member'
+  if (account.appRole === 'operator') return 'operator'
   return 'member'
 }
 
@@ -151,12 +153,14 @@ interface AccountRoleManagementProps {
   initialAccounts: RegisteredAccount[]
   initialInstructors: InstructorRoleRow[]
   initialPending: PendingAccountRow[]
+  operatorMode?: boolean
 }
 
 export function AccountRoleManagement({
   initialAccounts,
   initialInstructors,
   initialPending,
+  operatorMode = false,
 }: AccountRoleManagementProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('pending')
@@ -603,7 +607,7 @@ export function AccountRoleManagement({
                 </Select>
                 <p className="text-[11px] text-muted-foreground">
                   강사: 캘린더·수업·출석 · 학부모: 보호자 마이페이지 · 회원: 일반 마이페이지 ·
-                  성인회원: 성인 전용 공지·리포트
+                  성인회원: 성인 전용 공지·리포트 · 운영진: 가입 승인·포털 운영·러닝 참여
                 </p>
               </div>
 
@@ -676,6 +680,16 @@ export function AccountRoleManagement({
   )
 
   const pendingCount = pending.length
+
+  if (operatorMode) {
+    return (
+      <PendingApprovalsPanel
+        initialPending={pending}
+        instructors={initialInstructors}
+        operatorMode
+      />
+    )
+  }
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">

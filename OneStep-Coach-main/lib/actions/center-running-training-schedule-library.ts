@@ -1,6 +1,7 @@
 'use server'
 
 import { requireRole } from '@/lib/actions/auth'
+import { ADMIN_OR_OPERATOR_ROLES } from '@/lib/operator-access'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -103,7 +104,7 @@ function serializeSnapshotDays(
 }
 
 export async function fetchCenterTrainingScheduleLibrary(): Promise<CenterTrainingScheduleLibrary> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   const supabase = await libraryClient()
 
   const [snapshotsResult, presetsResult] = await Promise.all([
@@ -210,7 +211,7 @@ export async function saveCenterTrainingScheduleLocationPreset(input: {
   location_label: string
   naver_map_url: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const locationLabel = input.location_label.trim()
   const naverMapUrl = input.naver_map_url.trim()
@@ -247,7 +248,7 @@ export async function saveCenterTrainingScheduleLocationPreset(input: {
 export async function deleteCenterTrainingScheduleLocationPreset(
   presetId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   const supabase = await libraryClient()
 
   const { error } = await supabase

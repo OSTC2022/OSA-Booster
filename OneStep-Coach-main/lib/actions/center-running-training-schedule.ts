@@ -5,6 +5,7 @@ import {
   recordCenterTrainingScheduleAttendance,
 } from '@/lib/actions/center-training-schedule-attendance'
 import { getCurrentUser, getMemberForCurrentUser, requireRole } from '@/lib/actions/auth'
+import { ADMIN_OR_OPERATOR_ROLES } from '@/lib/operator-access'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -241,7 +242,7 @@ export async function getCenterRunningTrainingScheduleForAdmin(): Promise<{
   days: RunningLeagueTrainingScheduleDayInput[]
   tableReady: boolean
 }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   const bundle = await fetchCenterRunningTrainingSchedule(null, { includeHidden: true })
 
   if (!bundle.tableReady) {
@@ -268,7 +269,7 @@ export async function getCenterRunningTrainingScheduleForAdmin(): Promise<{
 export async function saveCenterRunningTrainingSchedule(
   days: RunningLeagueTrainingScheduleDayInput[],
 ): Promise<{ ok: true; warning?: string } | { ok: false; error: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const normalized: CenterScheduleDayUpsertRow[] = createEmptyTrainingScheduleDays().map(
     (emptyDay) => {
@@ -332,7 +333,7 @@ export async function getCenterRunningTrainingScheduleForMember(): Promise<Cente
 }
 
 export async function getCenterRunningTrainingScheduleAdminPreview(): Promise<CenterRunningTrainingScheduleBundle> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
   return fetchCenterRunningTrainingSchedule(null, { includeHidden: true })
 }
 
@@ -349,7 +350,7 @@ export async function toggleCenterRunningTrainingScheduleSignup(
   if (weekday == null) return { ok: false, error: '스케줄을 찾을 수 없습니다.' }
 
   const supabase = await scheduleClient()
-  const isAdultMember = user?.role === 'adult_member'
+  const isAdultMember = user?.role === 'adult_member' || user?.role === 'operator'
 
   let dayResult = await supabase
     .from('center_running_training_schedule_days')

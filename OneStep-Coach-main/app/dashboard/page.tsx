@@ -18,7 +18,12 @@ export default async function DashboardPage() {
   const profile = await getDashboardProfile()
   if (!profile) redirect('/auth/login')
 
-  if (profile.role === 'member' || profile.role === 'guardian' || profile.role === 'adult_member') {
+  if (
+    profile.role === 'member' ||
+    profile.role === 'guardian' ||
+    profile.role === 'adult_member' ||
+    profile.role === 'operator'
+  ) {
     redirect('/dashboard/my')
   }
 

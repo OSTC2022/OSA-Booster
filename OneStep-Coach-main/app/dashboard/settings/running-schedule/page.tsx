@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import { requireDashboardProfile } from '@/lib/auth/dashboard-user'
+import { canAccessSettingsArea } from '@/lib/operator-access'
 import { CenterRunningTrainingSchedulePanel } from '@/components/settings/running-schedule/center-running-training-schedule-panel'
 
 export default async function RunningScheduleSettingsPage() {
   const user = await requireDashboardProfile()
-  if (user.role !== 'admin') redirect('/unauthorized')
+  if (!canAccessSettingsArea(user.role)) redirect('/unauthorized')
 
   return (
     <div className="space-y-4">

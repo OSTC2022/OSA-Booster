@@ -456,9 +456,9 @@ function PortalGraphCompactActions({
         variant="outline"
         className="h-7 shrink-0 border-lime-500/30 bg-black/40 px-1.5 text-[9px] font-medium text-lime-200 hover:bg-lime-500/10 sm:h-8 sm:px-2 sm:text-[10px]"
         onClick={onAddPb}
-        aria-label="PB 등록 및 수정"
+        aria-label="PB 등록"
       >
-        <span className="whitespace-nowrap">PB 등록/수정</span>
+        <span className="whitespace-nowrap">PB 등록</span>
       </Button>
     </div>
   )

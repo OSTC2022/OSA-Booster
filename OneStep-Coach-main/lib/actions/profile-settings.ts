@@ -8,15 +8,15 @@ import { isProtectedAdminAccount } from '@/lib/protected-admin'
 import { formatKoreanPhoneInput } from '@/lib/phone-format'
 import { normalizeMemberGender } from '@/lib/running-league/ranking-gender'
 import type { MemberGender } from '@/lib/running-league/ranking-gender'
+import { isAdultPortalUser } from '@/lib/member-portal-routes'
+import { profileRoleToLegacyUsersRole } from '@/lib/roles'
 import type { UserRole } from '@/lib/types'
 
 const PROFILE_SETTINGS_SELECT =
   'full_name, avatar_url, phone, kakao_id, instagram_id, email, role'
 
 function toLegacyUsersRole(role: UserRole) {
-  if (role === 'admin') return 'admin'
-  if (role === 'instructor') return 'instructor'
-  return 'member'
+  return profileRoleToLegacyUsersRole(role)
 }
 
 function normalizeOptionalText(value: string | null | undefined) {
@@ -137,17 +137,16 @@ export async function updateMyProfile(input: {
     return { error: '이름을 입력해주세요.' }
   }
 
-  if (user.role === 'adult_member') {
+  if (isAdultPortalUser(user.role)) {
     const resolvedGender = normalizeMemberGender(input.gender)
     if (!resolvedGender) {
       return { error: '성별을 선택해주세요.' }
     }
   }
 
-  const genderToSync =
-    user.role === 'adult_member'
-      ? normalizeMemberGender(input.gender)
-      : gender
+  const genderToSync = isAdultPortalUser(user.role)
+    ? normalizeMemberGender(input.gender)
+    : gender
 
   if (fullName.length > 40) {
     return { error: '이름은 40자 이내로 입력해주세요.' }

@@ -17,6 +17,7 @@ import {
   mergeAuthDuplicateMembersIntoTarget,
 } from '@/lib/member-merge'
 import type { MemberPickerOption } from '@/lib/actions/members'
+import { profileRoleToLegacyUsersRole } from '@/lib/roles'
 import type { ProfileRole } from '@/lib/types'
 
 const INVITE_SUCCESS =
@@ -389,12 +390,7 @@ async function ensureMemberProfile(
     return { error: profileError.message }
   }
 
-  const legacyUsersRole =
-    role === 'adult_member' || role === 'guardian'
-      ? 'member'
-      : role === 'coach'
-        ? 'instructor'
-        : role
+  const legacyUsersRole = profileRoleToLegacyUsersRole(role)
 
   // public.users CHECK allows admin | instructor | member only
   const { error: legacyError } = await admin.from('users').upsert(
@@ -617,12 +613,7 @@ export async function linkAuthUserToMemberRecord(
     '회원'
 
   const profileRole: ProfileRole = options?.role ?? 'member'
-  const legacyRole =
-    profileRole === 'adult_member' || profileRole === 'guardian'
-      ? 'member'
-      : profileRole === 'coach'
-        ? 'instructor'
-        : profileRole
+  const legacyRole = profileRoleToLegacyUsersRole(profileRole)
 
   await clearMemberLinksForAuthUser(authUserId)
 

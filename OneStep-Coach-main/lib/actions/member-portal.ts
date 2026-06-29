@@ -18,7 +18,7 @@ export async function getMemberPortalDataForStaff(memberId: string) {
 
   await requireMemberViewer()
   const linkedRole = await getMemberLinkedProfileRole(memberId)
-  if (linkedRole !== 'adult_member') return null
+  if (linkedRole !== 'adult_member' && linkedRole !== 'operator') return null
 
   const member = await getMember(memberId)
   if (!member) return null

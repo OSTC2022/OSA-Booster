@@ -6,7 +6,7 @@
  * - 전체보기(FullRankingDialog): 반드시 유지 — 성별·거리·PB/마일리지 필터와 동기화
  * - 성인 러닝 회원만 랭킹 집계 (adult-running-eligibility + resolve-adult-running-member-ids)
  * - 성인 러닝 회원 랭킹에 실명 표시 (mask-member-name)
- * - PB 등록/수정·러닝 기록 추가는 rankings 컴포넌트 footerAction 으로 유지
+ * - PB 등록·러닝 기록 추가는 rankings 컴포넌트 footerAction 으로 유지
  * - 필터: rankingView × gender × pbDistance → buildFilteredPortalRankings
  */
 

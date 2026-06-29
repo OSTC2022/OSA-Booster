@@ -14,7 +14,7 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItemDef[] = [
     id: '/dashboard/my',
     title: '마이페이지',
     url: '/dashboard/my',
-    roles: ['member', 'guardian', 'adult_member'],
+    roles: ['member', 'guardian', 'adult_member', 'operator'],
   },
   {
     id: '/dashboard',
@@ -86,19 +86,25 @@ export const SIDEBAR_MENU_ITEMS: SidebarMenuItemDef[] = [
     id: '/dashboard/settings/adult-running-portal',
     title: '성인 러닝 포털',
     url: '/dashboard/settings/adult-running-portal',
-    roles: ['admin'],
+    roles: ['operator'],
   },
   {
     id: '/dashboard/settings/running-schedule',
     title: '러닝 스케줄',
     url: '/dashboard/settings/running-schedule',
-    roles: ['admin'],
+    roles: ['operator'],
+  },
+  {
+    id: '/dashboard/settings/adult-center-board',
+    title: '공지 · 이벤트',
+    url: '/dashboard/settings/adult-center-board',
+    roles: ['operator'],
   },
   {
     id: '/dashboard/settings',
     title: '설정',
     url: '/dashboard/settings',
-    roles: ['admin'],
+    roles: ['admin', 'operator'],
   },
 ]
 
@@ -119,10 +125,23 @@ export function getDefaultSidebarMenuOrder(role: SidebarMenuRole): string[] {
   )
 }
 
+export function getSidebarMenuTitle(
+  item: SidebarMenuItemDef,
+  role: SidebarMenuRole,
+): string {
+  if (role === 'operator' && item.id === '/dashboard/settings') {
+    return '가입 승인'
+  }
+  return item.title
+}
+
 /** 기본으로 숨길 메뉴 (저장값 없을 때·초기화 시 적용) */
 export function getDefaultSidebarMenuHidden(role: SidebarMenuRole): string[] {
   if (role === 'admin' || role === 'instructor') {
     return ['/dashboard/attendance']
+  }
+  if (role === 'operator') {
+    return []
   }
   return []
 }

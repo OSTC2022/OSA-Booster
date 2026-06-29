@@ -38,6 +38,7 @@ import type { Member } from '@/lib/types'
 import type { AdultPortalBrandConfig } from '@/lib/adult-portal-brand'
 import { formatPackageExpiryDateLabel } from '@/lib/session-package-utils'
 import { MEMBER_PORTAL_SHELL_CLASS } from '@/lib/running-league/member-portal-layout'
+import { isAdultPortalUser } from '@/lib/member-portal-routes'
 import { cn } from '@/lib/utils'
 
 interface MemberMyPageProps {
@@ -136,7 +137,7 @@ export function MemberMyPage({
   adultPortalNotice = null,
 }: MemberMyPageProps) {
   const { member, summary, centerContact, coachContact, sessionStatus } = data
-  const isAdultMember = role === 'adult_member'
+  const isAdultMember = isAdultPortalUser(role)
   const instructorName = member.primary_instructor?.name ?? '자율배정'
   const sportProfile = formatSportProfile(member)
   const todayRecordLabel = formatTodayRecordSummary(summary.todayRecorded)
