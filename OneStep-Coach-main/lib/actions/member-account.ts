@@ -11,7 +11,8 @@ import {
   getSiteUrl,
 } from '@/lib/site-url'
 import { isProtectedAdminAccount } from '@/lib/protected-admin'
-import { getCurrentUser, requireRole } from './auth'
+import { getCurrentUser, requireAuth, requireRole } from './auth'
+import { ADMIN_OR_OPERATOR_ROLES } from '@/lib/operator-access'
 import { upsertUserProfile } from '@/lib/profiles-admin'
 import {
   mergeAuthDuplicateMembersIntoTarget,
@@ -503,7 +504,7 @@ export async function searchMembersForAccountLink(
   query: string,
   accountUserId?: string | null,
 ): Promise<MemberLinkSearchRow[]> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const admin = createServiceRoleClient()
   const q = query.trim()
@@ -547,7 +548,7 @@ export async function searchMembersForAccountLink(
 export async function getMemberLinkedToAccount(
   authUserId: string,
 ): Promise<{ id: string; name: string } | null> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const admin = createServiceRoleClient()
   const { data } = await admin
@@ -566,7 +567,7 @@ export async function linkAuthUserToMemberRecord(
   memberId: string,
   options?: { role?: ProfileRole },
 ): Promise<{ error?: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const envError = getAdminEnvError()
   if (envError) return { error: envError }

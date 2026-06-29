@@ -378,7 +378,7 @@ export async function assignCoachRoleToInstructor(
   instructorId: string,
   accountUserId: string,
 ): Promise<{ error?: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   let admin: ReturnType<typeof createServiceRoleClient>
   try {
@@ -424,7 +424,7 @@ export async function setMemberPortalCoach(
   memberId: string,
   portalCoach: boolean,
 ): Promise<{ error?: string }> {
-  await requireRole(['admin'])
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
 
   const admin = createServiceRoleClient()
   const { error } = await admin
