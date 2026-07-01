@@ -1002,6 +1002,16 @@ function RankingPreview({
             >
               {formatPbDistanceLabel(pbDistance)}
             </span>
+          ) : rankingView === 'attendance' ? (
+            <>
+              <span className="shrink-0 text-sm font-medium text-lime-300">출석</span>
+              <span
+                className="min-w-0 truncate text-[11px] font-normal text-lime-200/80 sm:text-xs"
+                title="출석 횟수에 따라서 돌림판 추첨 확률 상승"
+              >
+                : 출석 횟수에 따라서 돌림판 추첨 확률 상승 ↑
+              </span>
+            </>
           ) : rankingView === 'chase' && chaseHeaderSummary ? (
             <>
               <span
