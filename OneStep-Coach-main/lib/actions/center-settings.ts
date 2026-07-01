@@ -63,6 +63,11 @@ const CENTER_SETTINGS_MIGRATION_HINTS: Array<{
     sql: 'supabase/add-adult-portal-chase-member.sql 및 add-adult-portal-chase-label.sql',
     label: '이겨라 술래',
   },
+  {
+    fields: ['adult_portal_mileage_min_km_enabled', 'adult_portal_mileage_min_km'],
+    sql: 'supabase/add-adult-portal-mileage-minimum.sql',
+    label: '마일리지 최소 거리',
+  },
 ]
 
 function migrationHintForUpdatedFields(updatedFields: string[]): string | null {
@@ -125,6 +130,8 @@ export async function updateCenterSettings(formData: {
   adult_portal_chase_member_id?: string | null
   adult_portal_chase_label?: string | null
   adult_portal_notice?: string | null
+  adult_portal_mileage_min_km_enabled?: boolean
+  adult_portal_mileage_min_km?: number | null
 }): Promise<{ data?: CenterSettings; error?: string }> {
   const user = await requireAuth()
   const input =
@@ -227,6 +234,19 @@ export async function updateCenterSettings(formData: {
   }
   if (input.adult_portal_notice !== undefined) {
     updateData.adult_portal_notice = normalizeOptionalString(input.adult_portal_notice)
+  }
+  if (input.adult_portal_mileage_min_km_enabled !== undefined) {
+    updateData.adult_portal_mileage_min_km_enabled = input.adult_portal_mileage_min_km_enabled
+  }
+  if (input.adult_portal_mileage_min_km !== undefined) {
+    const raw = input.adult_portal_mileage_min_km
+    if (raw == null) {
+      updateData.adult_portal_mileage_min_km = 3
+    } else {
+      const parsed = Number(raw)
+      updateData.adult_portal_mileage_min_km =
+        Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed * 10) / 10 : 3
+    }
   }
 
   const updatedFields = Object.keys(updateData).filter((key) => key !== 'updated_at')

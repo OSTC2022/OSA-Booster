@@ -42,6 +42,7 @@ import {
   type MileageDistanceLeaderboard,
 } from '@/lib/running-league/mileage-leaderboard'
 import { getCenterSettingsCached } from '@/lib/data/center-settings-read'
+import { resolveMileageRecognitionFromCenterSettings, type MileageRecognition } from '@/lib/running-league/mileage-recognition'
 import { resolvePortalRankingPeriod, type PortalRankingPeriod } from '@/lib/running-league/ranking-period'
 import { resolveAdultRunningMemberIds } from '@/lib/running-league/resolve-adult-running-member-ids'
 import { normalizeMemberGender } from '@/lib/running-league/ranking-gender'
@@ -1755,6 +1756,8 @@ async function syncParticipantMileageFromLogs(
   supabase: Awaited<ReturnType<typeof leagueClient>>,
   participantId: string,
 ): Promise<number> {
+  const centerSettings = await getCenterSettingsCached()
+  const mileageRecognition = resolveMileageRecognitionFromCenterSettings(centerSettings)
   const { start, end } = await getPortalRankingPeriod()
   const { data, error } = await supabase
     .from('running_league_mileage_logs')
@@ -1765,7 +1768,7 @@ async function syncParticipantMileageFromLogs(
 
   if (error) throw new Error(error.message)
 
-  const mileageKm = sumMileageLogsKm(data ?? [])
+  const mileageKm = sumMileageLogsKm(data ?? [], mileageRecognition)
   const mileageScore = mileageScoreFromKm(mileageKm)
 
   const { error: updateError } = await supabase
@@ -1821,6 +1824,7 @@ export type MemberRunningLeagueRankingBundle = {
   pbRecords: RunningLeagueRecord[]
   mileageLogs: RunningLeagueMileageLog[]
   rankingPeriod: PortalRankingPeriod
+  mileageRecognition: MileageRecognition
 }
 
 export type MemberMonthlyLessonRow = {
@@ -1911,6 +1915,7 @@ async function fetchMemberRunningLeagueHome(
 
   const centerSettings = await getCenterSettingsCached()
   const rankingPeriod = resolvePortalRankingPeriod(centerSettings)
+  const mileageRecognition = resolveMileageRecognitionFromCenterSettings(centerSettings)
   const chaseMemberId = centerSettings.adult_portal_chase_member_id?.trim() || null
   const chaseLabel = centerSettings.adult_portal_chase_label?.trim() || null
   const { start, end } = rankingPeriod
@@ -2045,13 +2050,18 @@ async function fetchMemberRunningLeagueHome(
         pb10kLeaderboard = buildPbDistanceLeaderboard(adultParticipants, leaguePbRecords, '10km')
         pbHalfLeaderboard = buildPbDistanceLeaderboard(adultParticipants, leaguePbRecords, 'half')
         pbFullLeaderboard = buildPbDistanceLeaderboard(adultParticipants, leaguePbRecords, 'full')
-        mileageLeaderboard = buildMileageDistanceLeaderboard(adultParticipants, leagueMileageLogs)
+        mileageLeaderboard = buildMileageDistanceLeaderboard(
+          adultParticipants,
+          leagueMileageLogs,
+          mileageRecognition,
+        )
         scoreLeaderboard = buildLeaderboard(adultParticipants)
         rankingBundle = {
           participants: adultParticipants,
           pbRecords: leaguePbRecordsWithSnapshots,
           mileageLogs: leagueMileageLogs,
           rankingPeriod,
+          mileageRecognition,
         }
       } catch (error) {
         console.error('fetchMemberRunningLeagueHome.rankings', error)

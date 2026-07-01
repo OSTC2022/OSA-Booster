@@ -65,11 +65,13 @@ export function PortalAggregateGraphPanel({
       return buildLeagueAggregateMileageRankComparisonChart({
         participants: filteredParticipants,
         logs: rankingBundle.mileageLogs,
+        mileageRecognition: rankingBundle.mileageRecognition,
       })
     }
     return buildLeagueAggregateMileageRankComparisonChart({
       participants: filteredParticipants,
       logs: rankingBundle.mileageLogs,
+      mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [filteredParticipants, pbDistance, portalPbRecords, rankingBundle, rankingView])
 
@@ -78,6 +80,7 @@ export function PortalAggregateGraphPanel({
     return buildLeagueMileageComparisonChart({
       participants: filteredParticipants,
       logs: rankingBundle.mileageLogs,
+      mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [filteredParticipants, rankingBundle])
 
@@ -98,6 +101,7 @@ export function PortalAggregateGraphPanel({
       participants: rankingBundle.participants,
       logs: rankingBundle.mileageLogs,
       chaseMemberId,
+      mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [chaseMemberId, rankingBundle])
 

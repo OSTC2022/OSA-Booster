@@ -1,6 +1,7 @@
 import type { PbLeaderboardDistance } from '@/lib/running-league/pb-leaderboard'
 import { buildMemberAttendanceRankHistorySeries } from '@/lib/running-league/attendance-history'
 import { buildMemberMileageRankHistorySeries } from '@/lib/running-league/mileage-rank-history'
+import type { MileageRecognition } from '@/lib/running-league/mileage-recognition'
 import { buildMemberRankingHistorySeries } from '@/lib/running-league/ranking-history'
 import type { RunningLeagueMileageLog, RunningLeagueParticipant, RunningLeagueRecord } from '@/lib/types'
 
@@ -53,11 +54,13 @@ export function resolveMemberMileageRankDelta(input: {
   currentRank: number
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
+  mileageRecognition?: MileageRecognition | null
 }): RankDelta {
   const points = buildMemberMileageRankHistorySeries({
     memberId: input.memberId,
     participants: input.participants,
     logs: input.logs,
+    mileageRecognition: input.mileageRecognition,
   })
   const previousRank = previousRankFromHistorySeries(points.map((point) => point.rank))
   return resolveRankDelta(input.currentRank, previousRank)

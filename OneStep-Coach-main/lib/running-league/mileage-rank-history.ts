@@ -1,5 +1,9 @@
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import {
+  sumMemberMileageUpToDate,
+  type MileageRecognition,
+} from '@/lib/running-league/mileage-recognition'
 import type { RunningLeagueMileageLog, RunningLeagueParticipant } from '@/lib/types'
 
 export type MileageRankHistoryPoint = {
@@ -17,31 +21,23 @@ function formatChartDate(value: string): string {
   }
 }
 
-function sumMileageUpToDate(
-  memberId: string,
-  logs: ReadonlyArray<RunningLeagueMileageLog>,
-  asOfDate: string,
-): number {
-  let total = 0
-  for (const log of logs) {
-    if (log.member_id !== memberId) continue
-    if (log.logged_at > asOfDate) continue
-    total += Number(log.distance_km ?? 0)
-  }
-  return Math.round(total * 10) / 10
-}
-
 /** 해당 날짜까지의 월 누적 마일리지 기준 순위 (내림차순) */
 export function computeMileageRankAtDate(input: {
   memberId: string
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
   asOfDate: string
+  mileageRecognition?: MileageRecognition | null
 }): number | null {
   const rows: Array<{ memberId: string; km: number }> = []
 
   for (const participant of input.participants) {
-    const km = sumMileageUpToDate(participant.member_id, input.logs, input.asOfDate)
+    const km = sumMemberMileageUpToDate(
+      participant.member_id,
+      input.logs,
+      input.asOfDate,
+      input.mileageRecognition,
+    )
     if (km <= 0) continue
     rows.push({ memberId: participant.member_id, km })
   }
@@ -80,13 +76,19 @@ export function buildMemberMileageRankHistorySeries(input: {
   memberId: string
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
+  mileageRecognition?: MileageRecognition | null
 }): MileageRankHistoryPoint[] {
   const logs = input.logs ?? []
   const dates = collectMileageSnapshotDates(input.memberId, logs)
   if (dates.length === 0) return []
 
   return dates.map((date) => {
-    const cumulativeKm = sumMileageUpToDate(input.memberId, logs, date)
+    const cumulativeKm = sumMemberMileageUpToDate(
+      input.memberId,
+      logs,
+      date,
+      input.mileageRecognition,
+    )
     return {
       date,
       label: formatChartDate(date),
@@ -96,6 +98,7 @@ export function buildMemberMileageRankHistorySeries(input: {
         participants: input.participants,
         logs,
         asOfDate: date,
+        mileageRecognition: input.mileageRecognition,
       }),
     }
   })

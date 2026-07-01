@@ -1,4 +1,8 @@
 import type { RunningLeagueMileageLog, RunningLeagueParticipant } from '@/lib/types'
+import {
+  isMileageLogRecognized,
+  type MileageRecognition,
+} from '@/lib/running-league/mileage-recognition'
 
 /**
  * 마일리지 랭킹 — member_id 기준 월 distance_km 합계, 내림차순.
@@ -34,8 +38,12 @@ export interface MileageDistanceLeaderboard {
 /** 로그 distance_km 합산 — syncParticipantMileageFromLogs 와 동일 */
 export function sumMileageLogsKm(
   logs: ReadonlyArray<Pick<RunningLeagueMileageLog, 'distance_km'>>,
+  recognition?: MileageRecognition | null,
 ): number {
-  const total = logs.reduce((sum, row) => sum + Number(row.distance_km ?? 0), 0)
+  const total = logs.reduce((sum, row) => {
+    if (!isMileageLogRecognized(row.distance_km, recognition)) return sum
+    return sum + Number(row.distance_km ?? 0)
+  }, 0)
   return Math.round(total * 10) / 10
 }
 
@@ -44,11 +52,13 @@ export function sumMileageLogsKm(
  */
 export function aggregateMonthlyMileageByMember(
   logs: ReadonlyArray<Pick<RunningLeagueMileageLog, 'member_id' | 'distance_km'>>,
+  recognition?: MileageRecognition | null,
 ): Map<string, number> {
   const totals = new Map<string, number>()
 
   for (const log of logs) {
     if (!log.member_id) continue
+    if (!isMileageLogRecognized(log.distance_km, recognition)) continue
     const next = (totals.get(log.member_id) ?? 0) + Number(log.distance_km ?? 0)
     totals.set(log.member_id, next)
   }
@@ -86,10 +96,11 @@ function assignMileageRanks(
 }
 
 export function buildMileageDistanceLeaderboard(
-  participants: RunningLeagueParticipant[],
-  monthlyLogs: RunningLeagueMileageLog[],
+  participants: ReadonlyArray<RunningLeagueParticipant>,
+  monthlyLogs: ReadonlyArray<RunningLeagueMileageLog>,
+  recognition?: MileageRecognition | null,
 ): MileageDistanceLeaderboard {
-  const monthlyDistanceByMember = aggregateMonthlyMileageByMember(monthlyLogs)
+  const monthlyDistanceByMember = aggregateMonthlyMileageByMember(monthlyLogs, recognition)
   const rankedCandidates: Array<Omit<MileageDistanceRankRow, 'rank'>> = []
   const unranked: MileageDistanceLeaderboard['unranked'] = []
 

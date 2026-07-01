@@ -172,7 +172,11 @@ export function MemberRankingDetailPanel({
 
   const mileagePoints = useMemo(() => {
     if (!rankingBundle) return []
-    return buildMemberMileageHistorySeries(memberId, rankingBundle.mileageLogs)
+    return buildMemberMileageHistorySeries(
+      memberId,
+      rankingBundle.mileageLogs,
+      rankingBundle.mileageRecognition,
+    )
   }, [memberId, rankingBundle])
 
   const mileageRankPoints = useMemo(() => {
@@ -181,6 +185,7 @@ export function MemberRankingDetailPanel({
       memberId,
       participants: filteredParticipants,
       logs: rankingBundle.mileageLogs,
+      mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [filteredParticipants, memberId, rankingBundle])
 
@@ -209,6 +214,7 @@ export function MemberRankingDetailPanel({
       logs: rankingBundle.mileageLogs,
       chaseMemberId,
       memberId,
+      mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [chaseMemberId, filteredParticipants, memberId, rankingBundle])
 

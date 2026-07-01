@@ -10,6 +10,7 @@ import { AdultPortalBlindSettingsPanel } from '@/components/dashboard/adult-port
 import { AdultPortalBrandSettingsPanel } from '@/components/dashboard/adult-portal-brand-settings-panel'
 import { AdultPortalRankingPeriodSettingsPanel } from '@/components/dashboard/adult-portal-ranking-period-settings-panel'
 import { AdultPortalChaseSettingsPanel } from '@/components/dashboard/adult-portal-chase-settings-panel'
+import { AdultPortalMileageMinimumSettingsPanel } from '@/components/dashboard/adult-portal-mileage-minimum-settings-panel'
 import { AdultPortalNoticeSettingsPanel } from '@/components/dashboard/adult-portal-notice-settings-panel'
 import { AdultPortalRankingResetPanel } from '@/components/dashboard/adult-portal-ranking-reset-panel'
 
@@ -32,6 +33,7 @@ export default async function AdultRunningPortalSettingsPage() {
       <AdultPortalBrandSettingsPanel centerSettings={centerSettings} />
       <AdultPortalNoticeSettingsPanel centerSettings={centerSettings} />
       <AdultPortalRankingPeriodSettingsPanel centerSettings={centerSettings} />
+      <AdultPortalMileageMinimumSettingsPanel centerSettings={centerSettings} />
       <AdultPortalChaseSettingsPanel
         centerSettings={centerSettings}
         rankingBundle={runningLeagueHome.rankingBundle}

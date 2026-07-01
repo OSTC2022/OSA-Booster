@@ -43,6 +43,8 @@ export function MemberStaffLeagueSummary({
       mileageLogs: runningLeagueHome.mileageLogs,
       pbRecords: runningLeagueHome.pbRecords,
       participants: runningLeagueHome.rankingBundle.participants,
+      rankingPeriod: runningLeagueHome.rankingPeriod,
+      mileageRecognition: runningLeagueHome.rankingBundle.mileageRecognition,
     })
   }, [filtered, memberId, runningLeagueHome])
 

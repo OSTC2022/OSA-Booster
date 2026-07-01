@@ -1,6 +1,10 @@
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { maskMemberNameForRanking } from '@/lib/running-league/mask-member-name'
+import {
+  sumMemberMileageUpToDate,
+  type MileageRecognition,
+} from '@/lib/running-league/mileage-recognition'
 import type { LeagueMileageComparisonChart } from '@/lib/running-league/league-mileage-comparison'
 import type { LeagueRankMemberSeries } from '@/lib/running-league/league-rank-comparison'
 import type { RunningLeagueMileageLog, RunningLeagueParticipant } from '@/lib/types'
@@ -11,20 +15,6 @@ function formatChartDate(value: string): string {
   } catch {
     return value
   }
-}
-
-function sumMileageUpToDate(
-  memberId: string,
-  logs: ReadonlyArray<RunningLeagueMileageLog>,
-  asOfDate: string,
-): number {
-  let total = 0
-  for (const log of logs) {
-    if (log.member_id !== memberId) continue
-    if (log.logged_at > asOfDate) continue
-    total += Number(log.distance_km ?? 0)
-  }
-  return Math.round(total * 10) / 10
 }
 
 function collectMileageSnapshotDates(
@@ -46,12 +36,18 @@ function resolveMileageRowsAtLatest(input: {
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
   latestDate: string
+  mileageRecognition?: MileageRecognition | null
 }): Array<{ memberId: string; memberName: string; km: number }> {
   return input.participants
     .map((participant) => ({
       memberId: participant.member_id,
       memberName: participant.member?.name?.trim() || '회원',
-      km: sumMileageUpToDate(participant.member_id, input.logs, input.latestDate),
+      km: sumMemberMileageUpToDate(
+        participant.member_id,
+        input.logs,
+        input.latestDate,
+        input.mileageRecognition,
+      ),
     }))
     .filter((row) => row.km > 0)
     .sort((a, b) => b.km - a.km || a.memberName.localeCompare(b.memberName, 'ko'))
@@ -60,6 +56,7 @@ function resolveMileageRowsAtLatest(input: {
 function buildComparisonChart(input: {
   logs: ReadonlyArray<RunningLeagueMileageLog>
   memberRows: Array<{ memberId: string; memberName: string }>
+  mileageRecognition?: MileageRecognition | null
 }): LeagueMileageComparisonChart | null {
   if (input.memberRows.length === 0) return null
 
@@ -79,7 +76,12 @@ function buildComparisonChart(input: {
       label: formatChartDate(date),
     }
     for (const member of members) {
-      row[`km_${member.memberId}`] = sumMileageUpToDate(member.memberId, input.logs, date)
+      row[`km_${member.memberId}`] = sumMemberMileageUpToDate(
+        member.memberId,
+        input.logs,
+        date,
+        input.mileageRecognition,
+      )
     }
     return row
   })
@@ -93,11 +95,13 @@ export function buildLeagueChaseComparisonChart(input: {
   logs: ReadonlyArray<RunningLeagueMileageLog>
   chaseMemberId: string
   maxBeaters?: number
+  mileageRecognition?: MileageRecognition | null
 }): LeagueMileageComparisonChart | null {
   const ranked = resolveMileageRowsAtLatest({
     participants: input.participants,
     logs: input.logs,
     latestDate: [...input.logs.map((log) => log.logged_at)].sort().at(-1) ?? '',
+    mileageRecognition: input.mileageRecognition,
   })
 
   const chaseParticipant = input.participants.find(
@@ -110,7 +114,12 @@ export function buildLeagueChaseComparisonChart(input: {
       ? {
           memberId: chaseParticipant.member_id,
           memberName: chaseParticipant.member?.name?.trim() || '회원',
-          km: sumMileageUpToDate(chaseParticipant.member_id, input.logs, latestDate),
+          km: sumMemberMileageUpToDate(
+            chaseParticipant.member_id,
+            input.logs,
+            latestDate,
+            input.mileageRecognition,
+          ),
         }
       : null)
   if (!chaseRow) return null
@@ -126,7 +135,11 @@ export function buildLeagueChaseComparisonChart(input: {
     })),
   ]
 
-  return buildComparisonChart({ logs: input.logs, memberRows })
+  return buildComparisonChart({
+    logs: input.logs,
+    memberRows,
+    mileageRecognition: input.mileageRecognition,
+  })
 }
 
 /** 개인 — 선택 회원 vs 술래 마일리지 격차 추이 */
@@ -135,6 +148,7 @@ export function buildMemberChaseComparisonChart(input: {
   logs: ReadonlyArray<RunningLeagueMileageLog>
   chaseMemberId: string
   memberId: string
+  mileageRecognition?: MileageRecognition | null
 }): LeagueMileageComparisonChart | null {
   const latestDate = [...input.logs.map((log) => log.logged_at)].sort().at(-1)
   if (!latestDate) return null
@@ -143,6 +157,7 @@ export function buildMemberChaseComparisonChart(input: {
     participants: input.participants,
     logs: input.logs,
     latestDate,
+    mileageRecognition: input.mileageRecognition,
   })
   const chaseParticipant = input.participants.find(
     (participant) => participant.member_id === input.chaseMemberId,
@@ -153,7 +168,12 @@ export function buildMemberChaseComparisonChart(input: {
       ? {
           memberId: chaseParticipant.member_id,
           memberName: chaseParticipant.member?.name?.trim() || '회원',
-          km: sumMileageUpToDate(chaseParticipant.member_id, input.logs, latestDate),
+          km: sumMemberMileageUpToDate(
+            chaseParticipant.member_id,
+            input.logs,
+            latestDate,
+            input.mileageRecognition,
+          ),
         }
       : null)
   const memberRow = ranked.find((row) => row.memberId === input.memberId)
@@ -167,5 +187,9 @@ export function buildMemberChaseComparisonChart(input: {
         ]
       : [{ memberId: chaseRow.memberId, memberName: chaseRow.memberName }]
 
-  return buildComparisonChart({ logs: input.logs, memberRows })
+  return buildComparisonChart({
+    logs: input.logs,
+    memberRows,
+    mileageRecognition: input.mileageRecognition,
+  })
 }

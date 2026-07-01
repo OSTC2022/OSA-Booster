@@ -3,6 +3,10 @@ import { ko } from 'date-fns/locale'
 import { maskMemberNameForRanking } from '@/lib/running-league/mask-member-name'
 import { buildMemberMileageHistorySeries } from '@/lib/running-league/mileage-history'
 import {
+  sumMemberMileageUpToDate,
+  type MileageRecognition,
+} from '@/lib/running-league/mileage-recognition'
+import {
   computeMileageRankAtDate,
   type MileageRankHistoryPoint,
 } from '@/lib/running-league/mileage-rank-history'
@@ -32,20 +36,6 @@ function formatChartDate(value: string): string {
   }
 }
 
-function sumMileageUpToDate(
-  memberId: string,
-  logs: ReadonlyArray<RunningLeagueMileageLog>,
-  asOfDate: string,
-): number {
-  let total = 0
-  for (const log of logs) {
-    if (log.member_id !== memberId) continue
-    if (log.logged_at > asOfDate) continue
-    total += Number(log.distance_km ?? 0)
-  }
-  return Math.round(total * 10) / 10
-}
-
 function collectMileageSnapshotDates(
   logs: ReadonlyArray<RunningLeagueMileageLog>,
   maxPoints = 12,
@@ -64,10 +54,16 @@ function resolveRankedMembersAtLatest(input: {
   logs: ReadonlyArray<RunningLeagueMileageLog>
   latestDate: string
   maxMembers: number
+  mileageRecognition?: MileageRecognition | null
 }): Array<{ memberId: string; memberName: string; km: number }> {
   const rows = input.participants
     .map((participant) => {
-      const km = sumMileageUpToDate(participant.member_id, input.logs, input.latestDate)
+      const km = sumMemberMileageUpToDate(
+        participant.member_id,
+        input.logs,
+        input.latestDate,
+        input.mileageRecognition,
+      )
       return {
         memberId: participant.member_id,
         memberName: participant.member?.name?.trim() || '회원',
@@ -86,6 +82,7 @@ export function buildLeagueMileageComparisonChart(input: {
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
   maxMembers?: number
+  mileageRecognition?: MileageRecognition | null
 }): LeagueMileageComparisonChart | null {
   const dates = collectMileageSnapshotDates(input.logs)
   if (dates.length === 0) return null
@@ -96,6 +93,7 @@ export function buildLeagueMileageComparisonChart(input: {
     logs: input.logs,
     latestDate,
     maxMembers: input.maxMembers ?? 20,
+    mileageRecognition: input.mileageRecognition,
   })
   if (rankedMembers.length === 0) return null
 
@@ -111,7 +109,12 @@ export function buildLeagueMileageComparisonChart(input: {
       label: formatChartDate(date),
     }
     for (const member of members) {
-      row[`km_${member.memberId}`] = sumMileageUpToDate(member.memberId, input.logs, date)
+      row[`km_${member.memberId}`] = sumMemberMileageUpToDate(
+        member.memberId,
+        input.logs,
+        date,
+        input.mileageRecognition,
+      )
     }
     return row
   })
@@ -124,6 +127,7 @@ export function buildLeagueAggregateMileageRankComparisonChart(input: {
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
   maxMembers?: number
+  mileageRecognition?: MileageRecognition | null
 }): LeagueRankComparisonChart | null {
   const dates = collectMileageSnapshotDates(input.logs)
   if (dates.length === 0) return null
@@ -134,6 +138,7 @@ export function buildLeagueAggregateMileageRankComparisonChart(input: {
     logs: input.logs,
     latestDate,
     maxMembers: input.maxMembers ?? 20,
+    mileageRecognition: input.mileageRecognition,
   })
   if (rankedMembers.length === 0) return null
 
@@ -154,6 +159,7 @@ export function buildLeagueAggregateMileageRankComparisonChart(input: {
         participants: input.participants,
         logs: input.logs,
         asOfDate: date,
+        mileageRecognition: input.mileageRecognition,
       })
     }
     return row
@@ -170,10 +176,11 @@ export function buildLeagueAggregateMileageRankComparisonChart(input: {
 export function hasAnyMileageRankHistory(
   participants: ReadonlyArray<RunningLeagueParticipant>,
   logs: ReadonlyArray<RunningLeagueMileageLog>,
+  mileageRecognition?: MileageRecognition | null,
 ): boolean {
   return participants.some(
     (participant) =>
-      buildMemberMileageHistorySeries(participant.member_id, logs).length > 0,
+      buildMemberMileageHistorySeries(participant.member_id, logs, mileageRecognition).length > 0,
   )
 }
 

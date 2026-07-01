@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { buildMemberMileageRankHistorySeries } from '@/lib/running-league/mileage-rank-history'
+import type { MileageRecognition } from '@/lib/running-league/mileage-recognition'
 import { formatPbDistanceLabel } from '@/lib/running-league/pb-distance-labels'
 import type { PbLeaderboardDistance } from '@/lib/running-league/pb-leaderboard'
 import { resolvePbTimeSeconds } from '@/lib/running-league/pb-leaderboard'
@@ -69,6 +70,7 @@ export function buildTopMonthlyRankRiser(input: {
   mileageLogs: ReadonlyArray<RunningLeagueMileageLog>
   monthStart: string
   monthEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): LeagueMomentumMember | null {
   let best: {
     memberId: string
@@ -95,6 +97,7 @@ export function buildTopMonthlyRankRiser(input: {
         memberId,
         participants: input.participants,
         logs: input.mileageLogs,
+        mileageRecognition: input.mileageRecognition,
       }).filter((point) => point.date >= input.monthStart && point.date <= input.monthEnd)
       change = monthRankDelta(points, input.monthStart, input.monthEnd)
     }
@@ -192,6 +195,7 @@ export function buildLeagueMomentumSnapshot(input: {
   monthStart: string
   monthEnd: string
   recentPbLimit?: number
+  mileageRecognition?: MileageRecognition | null
 }): LeagueMomentumSnapshot {
   return {
     topRiser: buildTopMonthlyRankRiser(input),

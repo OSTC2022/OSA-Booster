@@ -49,7 +49,11 @@ export function buildFilteredPortalRankings(
       half: buildPbDistanceLeaderboard(participants, pbRecords, 'half'),
       full: buildPbDistanceLeaderboard(participants, pbRecords, 'full'),
     },
-    mileageLeaderboard: buildMileageDistanceLeaderboard(participants, bundle.mileageLogs),
+    mileageLeaderboard: buildMileageDistanceLeaderboard(
+      participants,
+      bundle.mileageLogs,
+      bundle.mileageRecognition,
+    ),
     attendanceLeaderboard: buildAttendanceLeaderboard(
       participants,
       bundle.mileageLogs,

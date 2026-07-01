@@ -7,6 +7,11 @@ import {
   buildMileageDistanceLeaderboard,
   formatMileageKmDisplay,
 } from '@/lib/running-league/mileage-leaderboard'
+import {
+  isMileageLogRecognized,
+  sumMemberMileageOnDate,
+  type MileageRecognition,
+} from '@/lib/running-league/mileage-recognition'
 import type {
   RunningLeagueMileageLog,
   RunningLeagueParticipant,
@@ -95,13 +100,9 @@ function sumMileageOnDate(
   memberId: string,
   logs: ReadonlyArray<RunningLeagueMileageLog>,
   date: string,
+  mileageRecognition?: MileageRecognition | null,
 ): number {
-  let total = 0
-  for (const log of logs) {
-    if (log.member_id !== memberId || log.logged_at !== date) continue
-    total += Number(log.distance_km ?? 0)
-  }
-  return Math.round(total * 10) / 10
+  return sumMemberMileageOnDate(memberId, logs, date, mileageRecognition)
 }
 
 function memberLoggedOnDate(
@@ -116,8 +117,13 @@ function mileageLeaderAtDate(
   participants: ReadonlyArray<RunningLeagueParticipant>,
   logs: ReadonlyArray<RunningLeagueMileageLog>,
   asOfDate: string,
+  mileageRecognition?: MileageRecognition | null,
 ): { memberId: string; memberName: string } | null {
-  const board = buildMileageDistanceLeaderboard(participants, logsUpToDate(logs, asOfDate))
+  const board = buildMileageDistanceLeaderboard(
+    participants,
+    logsUpToDate(logs, asOfDate),
+    mileageRecognition,
+  )
   const leader = board.ranked[0]
   if (!leader) return null
   return { memberId: leader.memberId, memberName: leader.memberName }
@@ -149,6 +155,7 @@ function resolveRankAtDate(input: {
   asOfDate: string
   periodStart: string
   periodEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): number | null {
   if (input.rankingView === 'attendance') {
     return computeAttendanceRankAtDate({
@@ -166,6 +173,7 @@ function resolveRankAtDate(input: {
     participants: input.participants,
     logs: input.logs,
     asOfDate: input.asOfDate,
+    mileageRecognition: input.mileageRecognition,
   })
 }
 
@@ -176,6 +184,7 @@ function resolveLeaderAtDate(input: {
   asOfDate: string
   periodStart: string
   periodEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): { memberId: string; memberName: string } | null {
   if (input.rankingView === 'attendance') {
     return attendanceLeaderAtDate(
@@ -186,7 +195,12 @@ function resolveLeaderAtDate(input: {
       input.periodEnd,
     )
   }
-  return mileageLeaderAtDate(input.participants, input.logs, input.asOfDate)
+  return mileageLeaderAtDate(
+    input.participants,
+    input.logs,
+    input.asOfDate,
+    input.mileageRecognition,
+  )
 }
 
 function resolveRankLabel(rankingView: HighlightView): string {
@@ -202,6 +216,7 @@ function buildDailyStarHighlight(input: {
   spotlightDate: string
   periodStart: string
   periodEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): LeagueDailyHighlight | null {
   const dateLabel = formatShortDate(input.spotlightDate)
   const rankLabel = resolveRankLabel(input.rankingView)
@@ -249,7 +264,12 @@ function buildDailyStarHighlight(input: {
 
   let best: { memberId: string; memberName: string; km: number } | null = null
   for (const participant of input.participants) {
-    const km = sumMileageOnDate(participant.member_id, input.logs, input.spotlightDate)
+    const km = sumMileageOnDate(
+      participant.member_id,
+      input.logs,
+      input.spotlightDate,
+      input.mileageRecognition,
+    )
     if (km <= 0) continue
     const memberName = resolveParticipantName(participant)
     if (!best || km > best.km || (km === best.km && memberName.localeCompare(best.memberName, 'ko') < 0)) {
@@ -283,6 +303,7 @@ function buildRankClimberHighlight(input: {
   spotlightDate: string
   periodStart: string
   periodEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): LeagueDailyHighlight | null {
   const previousDateKey = format(subDays(parseISO(input.spotlightDate), 1), 'yyyy-MM-dd')
   if (previousDateKey < input.periodStart) return null
@@ -306,6 +327,7 @@ function buildRankClimberHighlight(input: {
       asOfDate: previousDateKey,
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
+      mileageRecognition: input.mileageRecognition,
     })
     const after = resolveRankAtDate({
       rankingView: input.rankingView,
@@ -315,6 +337,7 @@ function buildRankClimberHighlight(input: {
       asOfDate: input.spotlightDate,
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
+      mileageRecognition: input.mileageRecognition,
     })
     if (before == null || after == null || before <= after) continue
 
@@ -347,6 +370,7 @@ function buildLeaderStreakHighlight(input: {
   spotlightDate: string
   periodStart: string
   periodEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): LeagueDailyHighlight | null {
   const leaderToday = resolveLeaderAtDate({
     rankingView: input.rankingView,
@@ -355,6 +379,7 @@ function buildLeaderStreakHighlight(input: {
     asOfDate: input.spotlightDate,
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
+    mileageRecognition: input.mileageRecognition,
   })
   if (!leaderToday) return null
 
@@ -373,6 +398,7 @@ function buildLeaderStreakHighlight(input: {
       asOfDate: dateKey,
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
+      mileageRecognition: input.mileageRecognition,
     })
     if (!leader || leader.memberId !== leaderToday.memberId) break
 
@@ -402,12 +428,19 @@ function buildLeaguePulseHighlight(input: {
   rankingView: HighlightView
   logs: ReadonlyArray<RunningLeagueMileageLog>
   spotlightDate: string
+  mileageRecognition?: MileageRecognition | null
 }): LeagueDailyHighlight | null {
   const activeMemberIds = new Set<string>()
   let totalKm = 0
 
   for (const log of input.logs) {
     if (log.logged_at !== input.spotlightDate) continue
+    if (
+      input.rankingView !== 'attendance' &&
+      !isMileageLogRecognized(log.distance_km, input.mileageRecognition)
+    ) {
+      continue
+    }
     activeMemberIds.add(log.member_id)
     totalKm += Number(log.distance_km ?? 0)
   }
@@ -452,6 +485,7 @@ function buildRunnerUpHighlight(input: {
   spotlightDate: string
   periodStart: string
   periodEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): LeagueDailyHighlight | null {
   const rankLabel = resolveRankLabel(input.rankingView)
 
@@ -481,6 +515,7 @@ function buildRunnerUpHighlight(input: {
   const board = buildMileageDistanceLeaderboard(
     input.participants,
     logsUpToDate(input.logs, input.spotlightDate),
+    input.mileageRecognition,
   )
   const runnerUp = board.ranked[1]
   if (!runnerUp) return null
@@ -511,6 +546,7 @@ export function buildLeagueDailyHighlights(input: {
   periodEnd: string
   today?: string
   limit?: number
+  mileageRecognition?: MileageRecognition | null
 }): LeagueDailyHighlightsSnapshot {
   const today = input.today ?? format(new Date(), 'yyyy-MM-dd')
   const spotlightDate = resolveSpotlightDate(
@@ -527,6 +563,7 @@ export function buildLeagueDailyHighlights(input: {
     spotlightDate,
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
+    mileageRecognition: input.mileageRecognition,
   }
 
   const candidates = [
@@ -537,6 +574,7 @@ export function buildLeagueDailyHighlights(input: {
       rankingView: input.rankingView,
       logs: input.mileageLogs,
       spotlightDate,
+      mileageRecognition: input.mileageRecognition,
     }),
     buildRunnerUpHighlight(shared),
   ].filter((item): item is LeagueDailyHighlight => item != null)

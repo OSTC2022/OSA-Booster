@@ -236,6 +236,10 @@ export interface CenterSettings {
   adult_portal_chase_label?: string | null
   /** 성인 러닝 포털 공지사항 (게임 룰·안내) */
   adult_portal_notice?: string | null
+  /** 마일리지 최소 거리 규칙 사용 여부 */
+  adult_portal_mileage_min_km_enabled?: boolean
+  /** 마일리지 인정 최소 거리(km) — 설정값 이상만 집계 */
+  adult_portal_mileage_min_km?: number | null
   updated_at: string
 }
 

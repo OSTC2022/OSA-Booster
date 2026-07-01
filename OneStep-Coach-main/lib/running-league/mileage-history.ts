@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import { isMileageLogRecognized, type MileageRecognition } from '@/lib/running-league/mileage-recognition'
 import type { RunningLeagueMileageLog } from '@/lib/types'
 
 export type MileageHistoryPoint = {
@@ -21,6 +22,7 @@ function formatChartDate(value: string): string {
 export function buildMemberMileageHistorySeries(
   memberId: string,
   logs: ReadonlyArray<RunningLeagueMileageLog>,
+  mileageRecognition?: MileageRecognition | null,
 ): MileageHistoryPoint[] {
   const memberLogs = logs
     .filter((row) => row.member_id === memberId)
@@ -35,6 +37,7 @@ export function buildMemberMileageHistorySeries(
   const points: MileageHistoryPoint[] = []
 
   for (const log of memberLogs) {
+    if (!isMileageLogRecognized(log.distance_km, mileageRecognition)) continue
     const dailyKm = Math.round(Number(log.distance_km ?? 0) * 10) / 10
     if (dailyKm <= 0) continue
     cumulativeKm = Math.round((cumulativeKm + dailyKm) * 10) / 10

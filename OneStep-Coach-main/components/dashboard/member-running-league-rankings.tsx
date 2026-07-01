@@ -983,6 +983,7 @@ function RankingPreview({
         currentRank,
         participants: filteredParticipants,
         logs: rankingBundle.mileageLogs,
+        mileageRecognition: rankingBundle.mileageRecognition,
       })
     }
 
@@ -1575,6 +1576,7 @@ function MileageRankingList({
         currentRank,
         participants: filteredParticipants,
         logs: rankingBundle.mileageLogs,
+        mileageRecognition: rankingBundle.mileageRecognition,
       }),
     )
   }, [displayRows, filteredParticipants, rankingBundle])
@@ -2412,6 +2414,7 @@ export function MemberRunningLeagueRankings({
       periodStart: start,
       periodEnd: end,
       limit: 5,
+      mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [
     effectiveRankingPeriod,
@@ -2443,6 +2446,7 @@ export function MemberRunningLeagueRankings({
       pbRecords,
       participants: filteredParticipantsForStatus,
       rankingPeriod: effectiveRankingPeriod,
+      mileageRecognition: rankingBundle?.mileageRecognition,
     })
   }, [
     activeAttendanceLeaderboard,

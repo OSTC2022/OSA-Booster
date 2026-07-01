@@ -5,6 +5,7 @@ import {
 } from '@/lib/running-league/monthly-attendance'
 import { buildRecentPbUpdates } from '@/lib/running-league/league-momentum'
 import { formatMileageKmDisplay, sumMileageLogsKm } from '@/lib/running-league/mileage-leaderboard'
+import type { MileageRecognition } from '@/lib/running-league/mileage-recognition'
 import type { MileageDistanceLeaderboard } from '@/lib/running-league/mileage-leaderboard'
 import type { AttendanceLeaderboard } from '@/lib/running-league/attendance-leaderboard'
 import type { PortalRankingPeriod } from '@/lib/running-league/ranking-period'
@@ -60,6 +61,7 @@ function resolveMonthlyMileageKm(input: {
   mileageLeaderboard: MileageDistanceLeaderboard
   periodStart: string
   periodEnd: string
+  mileageRecognition?: MileageRecognition | null
 }): number {
   const fromLeaderboard = input.mileageLeaderboard.ranked.find(
     (row) => row.memberId === input.memberId,
@@ -72,7 +74,7 @@ function resolveMonthlyMileageKm(input: {
       log.logged_at >= input.periodStart &&
       log.logged_at <= input.periodEnd,
   )
-  if (monthLogs.length > 0) return sumMileageLogsKm(monthLogs)
+  if (monthLogs.length > 0) return sumMileageLogsKm(monthLogs, input.mileageRecognition)
 
   return Number(input.participant?.mileage_km ?? 0)
 }
@@ -129,6 +131,7 @@ export function buildMemberLeagueStatusSnapshot(input: {
   pbRecords: ReadonlyArray<RunningLeagueRecord>
   participants: ReadonlyArray<RunningLeagueParticipant>
   rankingPeriod: PortalRankingPeriod
+  mileageRecognition?: MileageRecognition | null
 }): MemberLeagueStatusSnapshot {
   const { start, end } = input.rankingPeriod
   const periodLabel = input.rankingPeriod.label
@@ -140,6 +143,7 @@ export function buildMemberLeagueStatusSnapshot(input: {
     mileageLeaderboard: input.mileageLeaderboard,
     periodStart: start,
     periodEnd: end,
+    mileageRecognition: input.mileageRecognition,
   })
   const goalAchievementRate = input.participant?.goal_achievement_rate ?? null
   const personalGoal = input.participant?.personal_goal?.trim() ?? null

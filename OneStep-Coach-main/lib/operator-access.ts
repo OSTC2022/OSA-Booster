@@ -76,6 +76,8 @@ const OPERATOR_CENTER_SETTINGS_FIELDS = new Set([
   'adult_portal_chase_member_id',
   'adult_portal_chase_label',
   'adult_portal_notice',
+  'adult_portal_mileage_min_km_enabled',
+  'adult_portal_mileage_min_km',
 ])
 
 export function filterCenterSettingsForOperator<T extends Record<string, unknown>>(
