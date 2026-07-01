@@ -88,6 +88,7 @@ export function AdultRunningPortalAdminView({
           chaseLabel={resolvedChaseLabel}
           showBrandHeader={false}
           showPortalShell={false}
+          canManageMemberLogs
         />
       </section>
     </div>

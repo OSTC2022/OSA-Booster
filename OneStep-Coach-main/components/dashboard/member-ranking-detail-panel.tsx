@@ -3,6 +3,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { MemberRankAspirationPanel } from '@/components/dashboard/member-rank-aspiration-panel'
+import { MemberMileageLogStaffPanel } from '@/components/dashboard/member-mileage-log-staff-panel'
 import { MemberRankingCharts, type GraphChartTab } from '@/components/dashboard/member-ranking-charts'
 import { Button } from '@/components/ui/button'
 import { formatPbDistanceLabel } from '@/lib/running-league/pb-distance-labels'
@@ -55,6 +56,7 @@ interface MemberRankingDetailPanelProps {
   graphChartTab?: GraphChartTab
   onGraphChartTabChange?: (tab: GraphChartTab) => void
   chaseMemberId?: string | null
+  canManageMemberLogs?: boolean
 }
 
 function MemberGraphSummaryHeader({
@@ -121,6 +123,7 @@ export function MemberRankingDetailPanel({
   graphChartTab,
   onGraphChartTabChange,
   chaseMemberId = null,
+  canManageMemberLogs = false,
 }: MemberRankingDetailPanelProps) {
   const isMobile = variant === 'mobile'
   const isMe = highlightMemberId != null && memberId === highlightMemberId
@@ -347,6 +350,14 @@ export function MemberRankingDetailPanel({
           chaseMemberId={chaseMemberId}
           className="animate-in fade-in-0 duration-300"
         />
+
+        {canManageMemberLogs ? (
+          <MemberMileageLogStaffPanel
+            memberId={memberId}
+            memberName={memberName}
+            rankingBundle={rankingBundle}
+          />
+        ) : null}
       </div>
     </div>
   )

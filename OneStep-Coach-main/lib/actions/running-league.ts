@@ -381,6 +381,7 @@ function revalidateRunningLeaguePaths(leagueId?: string) {
 function revalidateMemberMileagePaths() {
   revalidatePath('/dashboard/my')
   revalidatePath('/dashboard/my/running-league')
+  revalidatePath('/dashboard/settings/adult-running-portal')
 }
 
 function isMissingTableError(error: { code?: string } | null): boolean {
@@ -2496,6 +2497,170 @@ export async function updateMemberMileageLogForm(
   }
 
   return updateMemberMileageLog(logId, payload)
+}
+
+async function assertStaffCanManageMemberMileageLog(
+  logId: string,
+  memberId: string,
+): Promise<
+  | { ok: true; log: { id: string; participant_id: string; league_id: string; member_id: string } }
+  | { ok: false; error: string }
+> {
+  await requireRole(ADMIN_OR_OPERATOR_ROLES)
+
+  const supabase = await leagueClient()
+  const { data, error } = await supabase
+    .from('running_league_mileage_logs')
+    .select('id, participant_id, league_id, member_id')
+    .eq('id', logId)
+    .maybeSingle()
+
+  if (error || !data || data.member_id !== memberId) {
+    return { ok: false, error: '기록을 찾을 수 없습니다.' }
+  }
+
+  return {
+    ok: true,
+    log: {
+      id: String(data.id),
+      participant_id: String(data.participant_id),
+      league_id: String(data.league_id),
+      member_id: String(data.member_id),
+    },
+  }
+}
+
+export async function updateMemberMileageLogForStaff(
+  memberId: string,
+  logId: string,
+  input: Omit<Parameters<typeof saveMemberMileageLog>[0], 'skip_duplicate_check'> & {
+    skip_duplicate_check?: boolean
+  },
+): Promise<
+  | { ok: true; mileageKm: number }
+  | { ok: false; error: string; duplicate?: boolean }
+> {
+  const access = await assertStaffCanManageMemberMileageLog(logId, memberId)
+  if (!access.ok) return access
+
+  const distanceKm = Number(input.distance_km)
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+    return { ok: false, error: '거리(km)를 입력해주세요.' }
+  }
+
+  const loggedAt = input.logged_at ?? new Date().toISOString().slice(0, 10)
+  const supabase = await leagueClient()
+
+  if (!input.skip_duplicate_check) {
+    let duplicateQuery = supabase
+      .from('running_league_mileage_logs')
+      .select('id')
+      .eq('member_id', memberId)
+      .eq('league_id', access.log.league_id)
+      .eq('logged_at', loggedAt)
+      .eq('distance_km', Math.round(distanceKm * 100) / 100)
+      .neq('id', logId)
+
+    if (input.duration?.trim()) {
+      duplicateQuery = duplicateQuery.eq('duration', input.duration.trim())
+    }
+
+    const { data: duplicateRow } = await duplicateQuery.limit(1).maybeSingle()
+    if (duplicateRow) {
+      return {
+        ok: false,
+        duplicate: true,
+        error: '같은 날짜·거리·시간의 기록이 이미 있습니다.',
+      }
+    }
+  }
+
+  const { error } = await supabase
+    .from('running_league_mileage_logs')
+    .update({
+      distance_km: Math.round(distanceKm * 100) / 100,
+      logged_at: loggedAt,
+      notes: input.notes?.trim() ?? '',
+      duration: input.duration?.trim() || null,
+      pace: input.pace?.trim() || null,
+      heart_rate: input.heart_rate ?? null,
+      calories: input.calories ?? null,
+      activity_time: input.activity_time?.trim() || null,
+      source_app: input.source_app?.trim() || null,
+      verification_status: input.verification_status ?? 'manual',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', logId)
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return { ok: false, error: '마일리지 테이블이 없습니다. expand-running-league-schema.sql을 실행해주세요.' }
+    }
+    return { ok: false, error: error.message }
+  }
+
+  try {
+    const mileageKm = await syncParticipantMileageFromLogs(supabase, access.log.participant_id)
+    revalidateMemberMileagePaths()
+    return { ok: true, mileageKm }
+  } catch (syncError) {
+    return {
+      ok: false,
+      error: syncError instanceof Error ? syncError.message : '마일리지 합산에 실패했습니다.',
+    }
+  }
+}
+
+export async function deleteMemberMileageLogForStaff(
+  memberId: string,
+  logId: string,
+): Promise<{ ok: true; mileageKm: number } | { ok: false; error: string }> {
+  const access = await assertStaffCanManageMemberMileageLog(logId, memberId)
+  if (!access.ok) return access
+
+  const supabase = await leagueClient()
+  const { error } = await supabase.from('running_league_mileage_logs').delete().eq('id', logId)
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return { ok: false, error: '마일리지 테이블이 없습니다. expand-running-league-schema.sql을 실행해주세요.' }
+    }
+    return { ok: false, error: error.message }
+  }
+
+  try {
+    const mileageKm = await syncParticipantMileageFromLogs(supabase, access.log.participant_id)
+    revalidateMemberMileagePaths()
+    return { ok: true, mileageKm }
+  } catch (syncError) {
+    return {
+      ok: false,
+      error: syncError instanceof Error ? syncError.message : '마일리지 합산에 실패했습니다.',
+    }
+  }
+}
+
+export async function updateMemberMileageLogForStaffForm(
+  memberId: string,
+  logId: string,
+  formData: FormData,
+): Promise<
+  | { ok: true; mileageKm: number }
+  | { ok: false; error: string; duplicate?: boolean }
+> {
+  const payloadRaw = formData.get('payload')
+  if (typeof payloadRaw !== 'string' || !payloadRaw.trim()) {
+    return { ok: false, error: '저장 데이터가 없습니다.' }
+  }
+
+  let payload: Parameters<typeof updateMemberMileageLogForStaff>[2]
+  try {
+    payload = JSON.parse(payloadRaw) as Parameters<typeof updateMemberMileageLogForStaff>[2]
+  } catch {
+    return { ok: false, error: '저장 데이터 형식이 올바르지 않습니다.' }
+  }
+
+  return updateMemberMileageLogForStaff(memberId, logId, payload)
 }
 
 async function fetchPortalPbRecordsForParticipant(

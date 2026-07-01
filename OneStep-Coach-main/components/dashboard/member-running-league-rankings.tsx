@@ -652,6 +652,7 @@ interface MemberRunningLeagueRankingsProps {
   rankingPeriod?: PortalRankingPeriod
   chaseMemberId?: string | null
   chaseLabel?: string | null
+  canManageMemberLogs?: boolean
 }
 
 type MemberRankSummary =
@@ -2260,6 +2261,7 @@ export function MemberRunningLeagueRankings({
   rankingPeriod: rankingPeriodProp,
   chaseMemberId = null,
   chaseLabel = null,
+  canManageMemberLogs = false,
 }: MemberRunningLeagueRankingsProps) {
   const effectiveRankingPeriod =
     rankingBundle?.rankingPeriod ?? rankingPeriodProp ?? resolvePortalRankingPeriod()
@@ -2542,6 +2544,7 @@ export function MemberRunningLeagueRankings({
       onGraphChartTabChange={handleGraphChartTabChange}
       chaseMemberId={chaseMemberId}
       className={MEMBER_PORTAL_CARD_CLASS}
+      canManageMemberLogs={canManageMemberLogs}
     />
   ) : rankingBundle ? (
     <PortalAggregateGraphPanel

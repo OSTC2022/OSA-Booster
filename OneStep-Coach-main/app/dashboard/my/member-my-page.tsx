@@ -209,6 +209,7 @@ export function MemberMyPage({
               runningLeagueDetailHref={runningLeagueHref}
               showBrandHeader={false}
               showPortalShell={false}
+              canManageMemberLogs={canAccessSettingsArea(role)}
             />
           ) : null}
         </section>
