@@ -15,7 +15,7 @@ import type { PbLeaderboardDistance } from '@/lib/running-league/pb-leaderboard'
 import { filterParticipantsByGender, type RankingGenderFilter } from '@/lib/running-league/ranking-gender'
 import type { RankingView } from '@/lib/running-league/ranking-view'
 import type { MemberRunningLeagueRankingBundle } from '@/lib/actions/running-league'
-import { MEMBER_PORTAL_CARD_CLASS } from '@/lib/running-league/member-portal-layout'
+import { MEMBER_PORTAL_GRAPH_PANEL_CLASS } from '@/lib/running-league/member-portal-layout'
 import { cn } from '@/lib/utils'
 
 interface PortalAggregateGraphPanelProps {
@@ -65,12 +65,14 @@ export function PortalAggregateGraphPanel({
       return buildLeagueAggregateMileageRankComparisonChart({
         participants: filteredParticipants,
         logs: rankingBundle.mileageLogs,
+        maxMembers: filteredParticipants.length,
         mileageRecognition: rankingBundle.mileageRecognition,
       })
     }
     return buildLeagueAggregateMileageRankComparisonChart({
       participants: filteredParticipants,
       logs: rankingBundle.mileageLogs,
+      maxMembers: filteredParticipants.length,
       mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [filteredParticipants, pbDistance, portalPbRecords, rankingBundle, rankingView])
@@ -80,6 +82,7 @@ export function PortalAggregateGraphPanel({
     return buildLeagueMileageComparisonChart({
       participants: filteredParticipants,
       logs: rankingBundle.mileageLogs,
+      maxMembers: filteredParticipants.length,
       mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [filteredParticipants, rankingBundle])
@@ -101,6 +104,7 @@ export function PortalAggregateGraphPanel({
       participants: rankingBundle.participants,
       logs: rankingBundle.mileageLogs,
       chaseMemberId,
+      maxMembers: rankingBundle.participants.length,
       mileageRecognition: rankingBundle.mileageRecognition,
     })
   }, [chaseMemberId, rankingBundle])
@@ -115,7 +119,7 @@ export function PortalAggregateGraphPanel({
   }, [filteredParticipants, pbDistance, portalPbRecords, rankingBundle, rankingView])
 
   return (
-    <div className={cn(MEMBER_PORTAL_CARD_CLASS, className)}>
+    <div className={cn(MEMBER_PORTAL_GRAPH_PANEL_CLASS, className)}>
       {mobileFilterSlot}
       <div className="space-y-2 p-2.5">
         <p className="text-center text-[11px] text-zinc-500">

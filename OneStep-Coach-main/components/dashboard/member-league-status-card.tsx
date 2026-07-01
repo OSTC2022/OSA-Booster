@@ -28,6 +28,7 @@ export function MemberLeagueStatusCard({
 
   return (
     <div
+      data-member-league-status
       className={cn(
         'overflow-hidden rounded-xl border border-lime-400/40 bg-gradient-to-br from-zinc-950 via-black to-lime-500/[0.08] shadow-[0_0_24px_rgba(163,230,53,0.06)]',
         className,

@@ -74,11 +74,11 @@ export function buildMemberGraphPanelSummary(input: {
       rankLine:
         input.currentRank != null && input.totalRanked > 0
           ? isChase
-            ? `이겨라 후보 ${input.currentRank}위 / ${input.totalRanked}명`
+            ? `마일리지 전체 ${input.currentRank}위 / ${input.totalRanked}명`
             : `현재 월 마일리지 ${input.currentRank}위 / ${input.totalRanked}명`
           : input.totalRanked > 0
             ? isChase
-              ? `이겨라 · ${input.totalRanked}명이 술래를 이김`
+              ? `이겨라 · 마일리지 ${input.totalRanked}명`
               : `이번 달 마일리지 · ${input.totalRanked}명 참여`
             : null,
       recordLine: km > 0 ? `이번 달 누적 ${formatMileageKmDisplay(km)}` : '이번 달 기록 없음',

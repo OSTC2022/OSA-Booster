@@ -8,6 +8,12 @@ import { isProtectedAdminAccount } from '@/lib/protected-admin'
 import { formatKoreanPhoneInput } from '@/lib/phone-format'
 import { normalizeMemberGender } from '@/lib/running-league/ranking-gender'
 import type { MemberGender } from '@/lib/running-league/ranking-gender'
+import {
+  DEFAULT_PORTAL_STATUS_MESSAGE_COLOR,
+  normalizePortalStatusMessage,
+  normalizePortalStatusMessageColor,
+  PORTAL_STATUS_MESSAGE_MAX_LENGTH,
+} from '@/lib/running-league/portal-status-message'
 import { isAdultPortalUser } from '@/lib/member-portal-routes'
 import { profileRoleToLegacyUsersRole } from '@/lib/roles'
 import type { UserRole } from '@/lib/types'
@@ -31,8 +37,10 @@ async function syncContactToLinkedRecords(
     kakao_id: string | null
     instagram_id: string | null
     gender?: MemberGender | null
+    portal_status_message?: string | null
+    portal_status_message_color?: string | null
   },
-) {
+): Promise<string | undefined> {
   const supabase = await createClient()
 
   const memberPatch: Record<string, string | null> = {
@@ -43,11 +51,34 @@ async function syncContactToLinkedRecords(
   if (contact.gender !== undefined) {
     memberPatch.gender = contact.gender
   }
+  if (contact.portal_status_message !== undefined) {
+    memberPatch.portal_status_message = contact.portal_status_message
+  }
+  if (contact.portal_status_message_color !== undefined) {
+    memberPatch.portal_status_message_color = contact.portal_status_message_color
+  }
 
-  await supabase
+  const { error: memberUpdateError } = await supabase
     .from('members')
     .update(memberPatch)
     .or(`auth_user_id.eq.${userId},user_id.eq.${userId}`)
+
+  if (memberUpdateError) {
+    try {
+      const admin = createServiceRoleClient()
+      const { error: adminMemberError } = await admin
+        .from('members')
+        .update(memberPatch)
+        .or(`auth_user_id.eq.${userId},user_id.eq.${userId}`)
+      if (adminMemberError) {
+        console.error('syncContactToLinkedRecords.members', adminMemberError.message)
+        return adminMemberError.message
+      }
+    } catch {
+      console.error('syncContactToLinkedRecords.members', memberUpdateError.message)
+      return memberUpdateError.message
+    }
+  }
 
   try {
     const admin = createServiceRoleClient()
@@ -62,6 +93,8 @@ async function syncContactToLinkedRecords(
   } catch {
     /* service role 없으면 instructors 동기화 생략 */
   }
+
+  return undefined
 }
 
 export type MyProfileSettings = {
@@ -73,6 +106,9 @@ export type MyProfileSettings = {
   kakao_id: string
   instagram_id: string
   gender: MemberGender | null
+  portal_status_message: string
+  portal_status_message_color: string
+  has_linked_member: boolean
 }
 
 export async function getMyProfileSettings(): Promise<MyProfileSettings | null> {
@@ -90,6 +126,8 @@ export async function getMyProfileSettings(): Promise<MyProfileSettings | null> 
   let kakaoId = profile?.kakao_id ?? user.kakao_id ?? ''
   let instagramId = profile?.instagram_id ?? user.instagram_id ?? ''
   let gender: MemberGender | null = null
+  let portalStatusMessage = ''
+  let portalStatusMessageColor = DEFAULT_PORTAL_STATUS_MESSAGE_COLOR
 
   const member = await getMemberForCurrentUser()
   if (member) {
@@ -97,6 +135,10 @@ export async function getMyProfileSettings(): Promise<MyProfileSettings | null> 
     kakaoId = kakaoId || member.kakao_id || ''
     instagramId = instagramId || member.instagram_id || ''
     gender = normalizeMemberGender(member.gender)
+    portalStatusMessage = member.portal_status_message?.trim() ?? ''
+    portalStatusMessageColor = normalizePortalStatusMessageColor(
+      member.portal_status_message_color,
+    )
   }
 
   return {
@@ -108,6 +150,9 @@ export async function getMyProfileSettings(): Promise<MyProfileSettings | null> 
     kakao_id: kakaoId,
     instagram_id: instagramId,
     gender,
+    portal_status_message: portalStatusMessage,
+    portal_status_message_color: portalStatusMessageColor,
+    has_linked_member: member != null,
   }
 }
 
@@ -118,6 +163,8 @@ export async function updateMyProfile(input: {
   kakao_id?: string
   instagram_id?: string
   gender?: MemberGender | null
+  portal_status_message?: string
+  portal_status_message_color?: string
 }): Promise<{ error?: string }> {
   const user = await requireAuth()
   const fullName = input.full_name.trim()
@@ -160,6 +207,33 @@ export async function updateMyProfile(input: {
     return { error: '인스타그램 아이디는 80자 이내로 입력해주세요.' }
   }
 
+  const portalStatusMessage =
+    isAdultPortalUser(user.role) && input.portal_status_message !== undefined
+      ? normalizePortalStatusMessage(input.portal_status_message)
+      : undefined
+
+  const portalStatusMessageColor =
+    isAdultPortalUser(user.role) && input.portal_status_message_color !== undefined
+      ? normalizePortalStatusMessageColor(input.portal_status_message_color)
+      : undefined
+
+  if (
+    portalStatusMessage &&
+    portalStatusMessage.length > PORTAL_STATUS_MESSAGE_MAX_LENGTH
+  ) {
+    return { error: `상태 메시지는 ${PORTAL_STATUS_MESSAGE_MAX_LENGTH}자 이내로 입력해주세요.` }
+  }
+
+  if (isAdultPortalUser(user.role) && input.portal_status_message !== undefined) {
+    const member = await getMemberForCurrentUser()
+    if (!member && (portalStatusMessage || input.portal_status_message_color !== undefined)) {
+      return {
+        error:
+          '상태 메시지는 러닝 회원 프로필에 저장됩니다. 회원 연결 후 다시 시도해주세요.',
+      }
+    }
+  }
+
   const supabase = await createClient()
   const updatePayload: Record<string, string | null> = {
     full_name: fullName,
@@ -182,12 +256,22 @@ export async function updateMyProfile(input: {
     return { error: profileError.message }
   }
 
-  await syncContactToLinkedRecords(user.id, {
+  const memberSyncError = await syncContactToLinkedRecords(user.id, {
     phone,
     kakao_id: kakaoId,
     instagram_id: instagramId,
     ...(genderToSync !== undefined ? { gender: genderToSync } : {}),
+    ...(isAdultPortalUser(user.role) && portalStatusMessage !== undefined
+      ? { portal_status_message: portalStatusMessage }
+      : {}),
+    ...(isAdultPortalUser(user.role) && portalStatusMessageColor !== undefined
+      ? { portal_status_message_color: portalStatusMessageColor }
+      : {}),
   })
+
+  if (memberSyncError) {
+    return { error: memberSyncError }
+  }
 
   await supabase.from('users').upsert(
     {
@@ -228,6 +312,7 @@ export async function updateMyProfile(input: {
   revalidatePath('/dashboard/profile', 'page')
   revalidatePath('/dashboard/my/profile', 'page')
   revalidatePath('/dashboard/my', 'page')
+  revalidatePath('/dashboard/my/running-league', 'page')
   revalidatePath('/dashboard', 'layout')
   return { success: true as const }
 }

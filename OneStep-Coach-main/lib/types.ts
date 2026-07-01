@@ -80,6 +80,8 @@ export interface Member {
   body_share_token?: string | null
   is_active: boolean
   portal_coach?: boolean
+  portal_status_message?: string | null
+  portal_status_message_color?: string | null
   created_at: string
   deleted_at: string | null
   // Joined fields
@@ -345,7 +347,10 @@ export interface RunningLeagueParticipant {
   coach_comment: string
   created_at: string
   updated_at: string
-  member?: Pick<Member, 'id' | 'name' | 'sport' | 'phone' | 'gender' | 'portal_coach'> | null
+  member?: Pick<
+    Member,
+    'id' | 'name' | 'sport' | 'phone' | 'gender' | 'portal_coach' | 'portal_status_message' | 'portal_status_message_color'
+  > | null
 }
 
 export interface RunningLeagueGoal {

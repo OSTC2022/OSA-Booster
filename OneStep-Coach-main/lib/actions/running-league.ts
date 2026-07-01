@@ -47,6 +47,10 @@ import { resolvePortalRankingPeriod, type PortalRankingPeriod } from '@/lib/runn
 import { resolveAdultRunningMemberIds } from '@/lib/running-league/resolve-adult-running-member-ids'
 import { normalizeMemberGender } from '@/lib/running-league/ranking-gender'
 import {
+  mergePortalStatusFieldsIntoParticipants,
+  type PortalStatusMemberFields,
+} from '@/lib/running-league/portal-status-message'
+import {
   attendanceScoreFromLessonCounts,
   buildLeaderboard,
   clampScore,
@@ -100,6 +104,12 @@ const LEAGUE_SELECT =
   'id, title, description, starts_at, ends_at, status, audience, target_group, board_post_id, created_by, created_at, updated_at'
 
 const PARTICIPANT_SELECT =
+  'id, league_id, member_id, goal_level, goal_type, personal_goal, goal_achievement_rate, attendance_score, goal_score, record_score, mileage_score, recovery_score, mileage_km, total_score, record_baseline, record_current, notes, coach_comment, created_at, updated_at, member:members(id, name, sport, phone, gender, portal_coach, portal_status_message, portal_status_message_color)'
+
+const PARTICIPANT_SELECT_NO_STATUS_COLOR =
+  'id, league_id, member_id, goal_level, goal_type, personal_goal, goal_achievement_rate, attendance_score, goal_score, record_score, mileage_score, recovery_score, mileage_km, total_score, record_baseline, record_current, notes, coach_comment, created_at, updated_at, member:members(id, name, sport, phone, gender, portal_coach, portal_status_message)'
+
+const PARTICIPANT_SELECT_NO_STATUS =
   'id, league_id, member_id, goal_level, goal_type, personal_goal, goal_achievement_rate, attendance_score, goal_score, record_score, mileage_score, recovery_score, mileage_km, total_score, record_baseline, record_current, notes, coach_comment, created_at, updated_at, member:members(id, name, sport, phone, gender, portal_coach)'
 
 const PARTICIPANT_SELECT_LEGACY =
@@ -112,11 +122,100 @@ function isMissingPortalCoachColumnError(
   return message.includes('portal_coach') && message.includes('does not exist')
 }
 
+function isMissingPortalStatusMessageColumnError(
+  error: { message?: string } | null | undefined,
+): boolean {
+  const message = error?.message?.toLowerCase() ?? ''
+  return message.includes('portal_status_message') && message.includes('does not exist')
+}
+
+function isMissingPortalStatusMessageColorColumnError(
+  error: { message?: string } | null | undefined,
+): boolean {
+  const message = error?.message?.toLowerCase() ?? ''
+  return (
+    message.includes('portal_status_message_color') &&
+    (message.includes('does not exist') || message.includes('could not find'))
+  )
+}
+
+async function loadPortalStatusFieldsByMemberId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  memberIds: string[],
+): Promise<Map<string, PortalStatusMemberFields>> {
+  const uniqueIds = [...new Set(memberIds.filter(Boolean))]
+  const map = new Map<string, PortalStatusMemberFields>()
+  if (uniqueIds.length === 0) return map
+
+  const primary = await supabase
+    .from('members')
+    .select('id, portal_status_message, portal_status_message_color')
+    .in('id', uniqueIds)
+
+  if (primary.error) {
+    if (isMissingPortalStatusMessageColorColumnError(primary.error)) {
+      const withoutColor = await supabase
+        .from('members')
+        .select('id, portal_status_message')
+        .in('id', uniqueIds)
+      if (!withoutColor.error) {
+        for (const row of withoutColor.data ?? []) {
+          map.set(String(row.id), {
+            portal_status_message: (row as { portal_status_message?: string | null })
+              .portal_status_message ?? null,
+          })
+        }
+      }
+      return map
+    }
+    if (isMissingPortalStatusMessageColumnError(primary.error)) {
+      return map
+    }
+    console.error('loadPortalStatusFieldsByMemberId', primary.error.message)
+    return map
+  }
+
+  for (const row of primary.data ?? []) {
+    const record = row as {
+      id: string
+      portal_status_message?: string | null
+      portal_status_message_color?: string | null
+    }
+    map.set(String(record.id), {
+      portal_status_message: record.portal_status_message ?? null,
+      portal_status_message_color: record.portal_status_message_color ?? null,
+    })
+  }
+
+  return map
+}
+
 async function withParticipantSelect<T>(run: (select: string) => PromiseLike<{
   data: T
   error: { message?: string; code?: string } | null
 }>): Promise<{ data: T; error: { message?: string; code?: string } | null }> {
   const primary = await run(PARTICIPANT_SELECT)
+  if (primary.error && isMissingPortalStatusMessageColorColumnError(primary.error)) {
+    const withoutColor = await run(PARTICIPANT_SELECT_NO_STATUS_COLOR)
+    if (withoutColor.error && isMissingPortalStatusMessageColumnError(withoutColor.error)) {
+      const withoutStatus = await run(PARTICIPANT_SELECT_NO_STATUS)
+      if (withoutStatus.error && isMissingPortalCoachColumnError(withoutStatus.error)) {
+        return run(PARTICIPANT_SELECT_LEGACY)
+      }
+      return withoutStatus
+    }
+    if (withoutColor.error && isMissingPortalCoachColumnError(withoutColor.error)) {
+      return run(PARTICIPANT_SELECT_LEGACY)
+    }
+    return withoutColor
+  }
+  if (primary.error && isMissingPortalStatusMessageColumnError(primary.error)) {
+    const withoutStatus = await run(PARTICIPANT_SELECT_NO_STATUS)
+    if (withoutStatus.error && isMissingPortalCoachColumnError(withoutStatus.error)) {
+      return run(PARTICIPANT_SELECT_LEGACY)
+    }
+    return withoutStatus
+  }
   if (primary.error && isMissingPortalCoachColumnError(primary.error)) {
     return run(PARTICIPANT_SELECT_LEGACY)
   }
@@ -151,6 +250,12 @@ function mapParticipant(row: Record<string, unknown>): RunningLeagueParticipant 
           phone: ((memberRaw as Record<string, unknown>).phone as string | null) ?? null,
           gender: normalizeMemberGender((memberRaw as Record<string, unknown>).gender),
           portal_coach: Boolean((memberRaw as Record<string, unknown>).portal_coach),
+          portal_status_message:
+            ((memberRaw as Record<string, unknown>).portal_status_message as string | null) ??
+            null,
+          portal_status_message_color:
+            ((memberRaw as Record<string, unknown>).portal_status_message_color as string | null) ??
+            null,
         }
       : null
 
@@ -1988,9 +2093,23 @@ async function fetchMemberRunningLeagueHome(
       console.error('fetchMemberRunningLeagueHome.participants', allParticipantsResult.error)
       rankingsError = RANKINGS_LOAD_ERROR
     } else {
-      const participants = (allParticipantsResult.data ?? []).map((row) =>
+      const mappedParticipants = (allParticipantsResult.data ?? []).map((row) =>
         mapParticipant(row as Record<string, unknown>),
       )
+      const portalStatusByMemberId = await loadPortalStatusFieldsByMemberId(
+        leaderboardSupabase,
+        mappedParticipants.map((row) => row.member_id),
+      )
+      const participants = mergePortalStatusFieldsIntoParticipants(
+        mappedParticipants,
+        portalStatusByMemberId,
+      )
+      if (participant) {
+        participant = mergePortalStatusFieldsIntoParticipants(
+          [participant],
+          portalStatusByMemberId,
+        )[0]
+      }
 
       try {
         const adultMemberIds = await resolveAdultRunningMemberIds(

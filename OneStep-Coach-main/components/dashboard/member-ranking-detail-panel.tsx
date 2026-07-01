@@ -262,9 +262,9 @@ export function MemberRankingDetailPanel({
   return (
     <div
       className={cn(
-        'flex min-w-0 w-full flex-col overflow-hidden transition-all duration-300',
+        'flex min-w-0 w-full flex-col overflow-x-hidden overflow-y-visible transition-all duration-300',
         isMobile
-          ? cn(MEMBER_PORTAL_CARD_CLASS, className)
+          ? cn(MEMBER_PORTAL_CARD_CLASS, 'overflow-y-visible', className)
           : cn(
               'rounded-xl border',
               embedded

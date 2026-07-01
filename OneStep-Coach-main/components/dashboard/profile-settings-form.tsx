@@ -17,6 +17,11 @@ import {
 import { getRoleLabel } from '@/lib/roles'
 import type { MemberGender } from '@/lib/running-league/ranking-gender'
 import { MemberGenderField } from '@/components/members/member-gender-field'
+import {
+  DEFAULT_PORTAL_STATUS_MESSAGE_COLOR,
+  formatPortalStatusMessageBracket,
+  PORTAL_STATUS_MESSAGE_MAX_LENGTH,
+} from '@/lib/running-league/portal-status-message'
 import type { User } from '@/lib/types'
 
 interface ProfileSettingsFormProps {
@@ -26,9 +31,18 @@ interface ProfileSettingsFormProps {
   onSaved?: () => void
   memberGender?: MemberGender | null
   showMemberGender?: boolean
+  portalStatusMessage?: string
+  portalStatusMessageColor?: string
+  showPortalStatusMessage?: boolean
+  hasLinkedMember?: boolean
 }
 
-function settingsFromUser(user: User, memberGender: MemberGender | null | undefined) {
+function settingsFromUser(
+  user: User,
+  memberGender: MemberGender | null | undefined,
+  portalStatusMessage?: string,
+  portalStatusMessageColor?: string,
+) {
   return {
     fullName: user.full_name ?? '',
     phone: user.phone ?? '',
@@ -36,6 +50,8 @@ function settingsFromUser(user: User, memberGender: MemberGender | null | undefi
     instagramId: user.instagram_id ?? '',
     avatarUrl: user.avatar_url ?? null,
     gender: memberGender ?? null,
+    portalStatusMessage: portalStatusMessage ?? '',
+    portalStatusMessageColor: portalStatusMessageColor ?? DEFAULT_PORTAL_STATUS_MESSAGE_COLOR,
   }
 }
 
@@ -46,26 +62,47 @@ export function ProfileSettingsForm({
   onSaved,
   memberGender = null,
   showMemberGender = false,
+  portalStatusMessage = '',
+  portalStatusMessageColor = DEFAULT_PORTAL_STATUS_MESSAGE_COLOR,
+  showPortalStatusMessage = false,
+  hasLinkedMember = true,
 }: ProfileSettingsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
   const [isUploading, setIsUploading] = useState(false)
-  const [fullName, setFullName] = useState(() => settingsFromUser(user, memberGender).fullName)
-  const [phone, setPhone] = useState(() => settingsFromUser(user, memberGender).phone)
-  const [kakaoId, setKakaoId] = useState(() => settingsFromUser(user, memberGender).kakaoId)
-  const [instagramId, setInstagramId] = useState(() => settingsFromUser(user, memberGender).instagramId)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => settingsFromUser(user, memberGender).avatarUrl)
-  const [gender, setGender] = useState<MemberGender | null>(() => settingsFromUser(user, memberGender).gender)
+  const initialSettings = settingsFromUser(
+    user,
+    memberGender,
+    portalStatusMessage,
+    portalStatusMessageColor,
+  )
+  const [fullName, setFullName] = useState(() => initialSettings.fullName)
+  const [phone, setPhone] = useState(() => initialSettings.phone)
+  const [kakaoId, setKakaoId] = useState(() => initialSettings.kakaoId)
+  const [instagramId, setInstagramId] = useState(() => initialSettings.instagramId)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => initialSettings.avatarUrl)
+  const [gender, setGender] = useState<MemberGender | null>(() => initialSettings.gender)
+  const [statusMessage, setStatusMessage] = useState(() => initialSettings.portalStatusMessage)
+  const [statusMessageColor, setStatusMessageColor] = useState(
+    () => initialSettings.portalStatusMessageColor,
+  )
 
   useEffect(() => {
-    const next = settingsFromUser(user, memberGender)
+    const next = settingsFromUser(
+      user,
+      memberGender,
+      portalStatusMessage,
+      portalStatusMessageColor,
+    )
     setFullName(next.fullName)
     setPhone(next.phone)
     setKakaoId(next.kakaoId)
     setInstagramId(next.instagramId)
     setAvatarUrl(next.avatarUrl)
     setGender(next.gender)
-  }, [user, memberGender])
+    setStatusMessage(next.portalStatusMessage)
+    setStatusMessageColor(next.portalStatusMessageColor)
+  }, [user, memberGender, portalStatusMessage, portalStatusMessageColor])
 
   async function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -115,6 +152,10 @@ export function ProfileSettingsForm({
         kakao_id: kakaoId,
         instagram_id: instagramId,
         ...(showMemberGender ? { gender } : {}),
+        ...(showPortalStatusMessage ? { portal_status_message: statusMessage } : {}),
+        ...(showPortalStatusMessage
+          ? { portal_status_message_color: statusMessageColor }
+          : {}),
       })
       if (result.error) {
         toast.error('프로필 저장 실패', { description: result.error })
@@ -191,6 +232,61 @@ export function ProfileSettingsForm({
             maxLength={40}
           />
         </div>
+
+        {showPortalStatusMessage ? (
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`${idPrefix}-status-message`}>상태 메시지</Label>
+            <Input
+              id={`${idPrefix}-status-message`}
+              value={statusMessage}
+              onChange={(e) => setStatusMessage(e.target.value)}
+              placeholder="예: 오늘도 달린다"
+              maxLength={PORTAL_STATUS_MESSAGE_MAX_LENGTH}
+              disabled={disabled}
+            />
+            <p className="text-xs text-muted-foreground">
+              랭킹에서 이름과 거리 사이에 [{PORTAL_STATUS_MESSAGE_MAX_LENGTH}자 이내]로
+              표시됩니다.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-status-message-color`}>상태 메시지 색상</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`${idPrefix}-status-message-color`}
+                  type="color"
+                  value={statusMessageColor}
+                  onChange={(event) => setStatusMessageColor(event.target.value)}
+                  className="h-10 w-12 shrink-0 cursor-pointer p-1"
+                  disabled={disabled}
+                />
+                <Input
+                  value={statusMessageColor}
+                  onChange={(event) => setStatusMessageColor(event.target.value)}
+                  placeholder={DEFAULT_PORTAL_STATUS_MESSAGE_COLOR}
+                  className="font-mono text-sm"
+                  disabled={disabled}
+                />
+              </div>
+            </div>
+            {statusMessage.trim() ? (
+              <p className="text-xs text-muted-foreground">
+                미리보기{' '}
+                <span
+                  className="font-medium"
+                  style={{ color: statusMessageColor }}
+                >
+                  {formatPortalStatusMessageBracket(statusMessage)}
+                </span>
+              </p>
+            ) : null}
+            {!hasLinkedMember ? (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                러닝 회원으로 연결되면 저장·표시됩니다. 연결이 안 되어 있으면 센터에
+                문의해주세요.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="space-y-1.5">
           <Label htmlFor={`${idPrefix}-phone`}>연락처</Label>

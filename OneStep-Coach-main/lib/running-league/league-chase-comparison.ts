@@ -36,9 +36,10 @@ function resolveMileageRowsAtLatest(input: {
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
   latestDate: string
+  maxMembers?: number
   mileageRecognition?: MileageRecognition | null
 }): Array<{ memberId: string; memberName: string; km: number }> {
-  return input.participants
+  const rows = input.participants
     .map((participant) => ({
       memberId: participant.member_id,
       memberName: participant.member?.name?.trim() || '회원',
@@ -51,6 +52,9 @@ function resolveMileageRowsAtLatest(input: {
     }))
     .filter((row) => row.km > 0)
     .sort((a, b) => b.km - a.km || a.memberName.localeCompare(b.memberName, 'ko'))
+
+  if (input.maxMembers == null) return rows
+  return rows.slice(0, input.maxMembers)
 }
 
 function buildComparisonChart(input: {
@@ -89,51 +93,42 @@ function buildComparisonChart(input: {
   return { rows, members }
 }
 
-/** 전체 — 술래(빨간색) + 술래를 이긴 회원들의 마일리지 추이 */
+/** 전체 마일리지 순위 + 술래(빨간색) — 술래보다 뒤인 회원도 그래프·툴팁에 포함 */
 export function buildLeagueChaseComparisonChart(input: {
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
   chaseMemberId: string
-  maxBeaters?: number
+  maxMembers?: number
   mileageRecognition?: MileageRecognition | null
 }): LeagueMileageComparisonChart | null {
-  const ranked = resolveMileageRowsAtLatest({
-    participants: input.participants,
-    logs: input.logs,
-    latestDate: [...input.logs.map((log) => log.logged_at)].sort().at(-1) ?? '',
-    mileageRecognition: input.mileageRecognition,
-  })
+  const latestDate = [...input.logs.map((log) => log.logged_at)].sort().at(-1) ?? ''
+  if (!latestDate) return null
 
   const chaseParticipant = input.participants.find(
     (participant) => participant.member_id === input.chaseMemberId,
   )
-  const latestDate = [...input.logs.map((log) => log.logged_at)].sort().at(-1) ?? ''
-  const chaseRow =
-    ranked.find((row) => row.memberId === input.chaseMemberId) ??
-    (chaseParticipant
-      ? {
-          memberId: chaseParticipant.member_id,
-          memberName: chaseParticipant.member?.name?.trim() || '회원',
-          km: sumMemberMileageUpToDate(
-            chaseParticipant.member_id,
-            input.logs,
-            latestDate,
-            input.mileageRecognition,
-          ),
-        }
-      : null)
-  if (!chaseRow) return null
+  if (!chaseParticipant) return null
 
-  const beaters = ranked.filter(
-    (row) => row.memberId !== input.chaseMemberId && row.km > chaseRow.km,
-  )
-  const memberRows = [
-    { memberId: chaseRow.memberId, memberName: chaseRow.memberName },
-    ...beaters.slice(0, input.maxBeaters ?? 12).map((row) => ({
-      memberId: row.memberId,
-      memberName: row.memberName,
-    })),
-  ]
+  const maxMembers = input.maxMembers ?? input.participants.length
+  const ranked = resolveMileageRowsAtLatest({
+    participants: input.participants,
+    logs: input.logs,
+    latestDate,
+    maxMembers,
+    mileageRecognition: input.mileageRecognition,
+  })
+
+  let memberRows = ranked.map((row) => ({
+    memberId: row.memberId,
+    memberName: row.memberName,
+  }))
+
+  if (!memberRows.some((row) => row.memberId === input.chaseMemberId)) {
+    memberRows.push({
+      memberId: chaseParticipant.member_id,
+      memberName: chaseParticipant.member?.name?.trim() || '회원',
+    })
+  }
 
   return buildComparisonChart({
     logs: input.logs,

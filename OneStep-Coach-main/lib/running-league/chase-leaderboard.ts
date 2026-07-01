@@ -46,14 +46,48 @@ function resolveChaseMileageRow(
   }
 }
 
-function isChaseBeaterRow(row: MileageDistanceRankRow, chaseRow: MileageDistanceRankRow): boolean {
-  if (row.memberId === chaseRow.memberId) return false
-  if (row.mileageKm > chaseRow.mileageKm) return true
-  if (row.mileageKm < chaseRow.mileageKm) return false
-  return row.rank < chaseRow.rank
+function insertChaseRowIfMissing(
+  ranked: MileageDistanceRankRow[],
+  chaseRow: MileageDistanceRankRow,
+): MileageDistanceRankRow[] {
+  if (ranked.some((row) => row.memberId === chaseRow.memberId)) {
+    return ranked
+  }
+
+  const next = [...ranked]
+  const insertAt = next.findIndex((row) => row.mileageKm < chaseRow.mileageKm)
+  if (insertAt < 0) {
+    next.push(chaseRow)
+  } else {
+    next.splice(insertAt, 0, chaseRow)
+  }
+  return next
 }
 
-/** 술래보다 마일리지가 많은 회원 + 술래 본인(이겨라 라벨용) */
+/** 술래 마일리지(km) — 성별 필터와 무관하게 전체 보드에서 조회 */
+export function resolveChaseTargetMileageKm(
+  mileageLeaderboard: MileageDistanceLeaderboard,
+  chaseMemberId: string | null | undefined,
+  participants?: ReadonlyArray<ChaseParticipantRef>,
+): number | null {
+  if (!chaseMemberId) return null
+  const chaseRow = resolveChaseMileageRow(mileageLeaderboard, chaseMemberId, participants)
+  return chaseRow?.mileageKm ?? null
+}
+
+export function formatChaseGapLabel(memberKm: number, chaseKm: number): string | null {
+  const delta = Math.round((memberKm - chaseKm) * 10) / 10
+  if (delta === 0) return '술래와 동률'
+  const formatted = Number.isInteger(Math.abs(delta))
+    ? String(Math.abs(delta))
+    : Math.abs(delta).toFixed(1)
+  return delta > 0 ? `술래 +${formatted}km` : `술래 -${formatted}km`
+}
+
+/**
+ * 이겨라 탭 — 마일리지 전체 순위(술래보다 뒤인 회원 포함).
+ * 각 row.rank 는 월 마일리지 전체 순위입니다.
+ */
 export function buildChaseBeatMileageLeaderboard(
   mileageLeaderboard: MileageDistanceLeaderboard,
   chaseMemberId: string | null | undefined,
@@ -76,11 +110,9 @@ export function buildChaseBeatMileageLeaderboard(
     return { ranked: [], unranked: [] }
   }
 
-  const beaters = mileageLeaderboard.ranked.filter((row) => isChaseBeaterRow(row, chaseRow))
-
   return {
-    ranked: [...beaters, chaseRow],
-    unranked: [],
+    ranked: insertChaseRowIfMissing([...mileageLeaderboard.ranked], chaseRow),
+    unranked: mileageLeaderboard.unranked,
   }
 }
 

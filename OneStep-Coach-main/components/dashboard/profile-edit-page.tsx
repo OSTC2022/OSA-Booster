@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { ProfileSettingsForm } from '@/components/dashboard/profile-settings-form'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,10 @@ interface ProfileEditPageProps {
   backLabel: string
   memberGender?: MemberGender | null
   showMemberGender?: boolean
+  portalStatusMessage?: string
+  portalStatusMessageColor?: string
+  showPortalStatusMessage?: boolean
+  hasLinkedMember?: boolean
 }
 
 export function ProfileEditPage({
@@ -22,7 +27,13 @@ export function ProfileEditPage({
   backLabel,
   memberGender = null,
   showMemberGender = false,
+  portalStatusMessage = '',
+  showPortalStatusMessage = false,
+  portalStatusMessageColor,
+  hasLinkedMember = true,
 }: ProfileEditPageProps) {
+  const router = useRouter()
+
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
       <div className="flex items-center gap-2">
@@ -34,7 +45,8 @@ export function ProfileEditPage({
         <div>
           <h1 className="text-xl font-bold lg:text-2xl">프로필 수정</h1>
           <p className="text-sm text-muted-foreground">
-            사진·이름·연락처{showMemberGender ? '·성별' : ''}·SNS 정보를 변경합니다.
+            사진·이름·연락처{showMemberGender ? '·성별' : ''}
+            {showPortalStatusMessage ? '·상태 메시지' : ''}·SNS 정보를 변경합니다.
           </p>
         </div>
       </div>
@@ -43,8 +55,9 @@ export function ProfileEditPage({
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">내 프로필</CardTitle>
           <CardDescription>
-            로그인 이메일은 변경할 수 없습니다. 저장 후 상단 프로필 사진에
-            반영됩니다.
+            {showPortalStatusMessage
+              ? '상태 메시지는 러닝 랭킹에서 이름 옆에 표시됩니다. 로그인 이메일은 변경할 수 없습니다.'
+              : '로그인 이메일은 변경할 수 없습니다. 저장 후 상단 프로필 사진에 반영됩니다.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -53,6 +66,14 @@ export function ProfileEditPage({
             idPrefix="profile-page"
             memberGender={memberGender}
             showMemberGender={showMemberGender}
+            portalStatusMessage={portalStatusMessage}
+            portalStatusMessageColor={portalStatusMessageColor}
+            showPortalStatusMessage={showPortalStatusMessage}
+            hasLinkedMember={hasLinkedMember}
+            onSaved={() => {
+              router.refresh()
+              router.push(backHref)
+            }}
           />
         </CardContent>
       </Card>

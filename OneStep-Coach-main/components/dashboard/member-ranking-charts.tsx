@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ReactNode, WheelEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   CartesianGrid,
@@ -9,6 +9,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type TooltipProps,
 } from 'recharts'
 import {
   ChartContainer,
@@ -35,6 +36,7 @@ import {
   isChaseTargetMember,
 } from '@/lib/running-league/portal-chase-target'
 import { formatSecondsToRunningTime } from '@/lib/running-league/records'
+import { scrollMemberPortalToElement } from '@/lib/member-portal-scroll'
 import { cn } from '@/lib/utils'
 
 const LIME_EMPHASIS = '#a3e635'
@@ -42,6 +44,48 @@ const LIME_BRIGHT = '#d9f99d'
 const LIME_MUTED = '#4d7c0f'
 const FADED_MEMBER_COLOR = '#3f4f5f'
 const FADED_MEMBER_OPACITY = 0.22
+
+const SCROLLABLE_TOOLTIP_LIST_CLASS =
+  'max-h-[min(9rem,calc(100dvh-15rem))] overflow-y-auto overscroll-y-contain touch-pan-y [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+
+function handleTooltipListWheel(event: WheelEvent<HTMLDivElement>) {
+  const element = event.currentTarget
+  const { scrollTop, scrollHeight, clientHeight } = element
+  const canScrollUp = scrollTop > 0
+  const canScrollDown = scrollTop + clientHeight < scrollHeight - 1
+
+  if ((event.deltaY < 0 && canScrollUp) || (event.deltaY > 0 && canScrollDown)) {
+    event.stopPropagation()
+  }
+}
+
+function scrollPortalStatusIntoView() {
+  if (!document.getElementById('member-portal-main')) return
+  const status = document.querySelector('[data-member-league-status]')
+  if (!status) return
+  window.requestAnimationFrame(() => {
+    scrollMemberPortalToElement(status, true, 80)
+  })
+}
+
+function chartTooltipAnchorPosition(
+  coordinate?: Partial<{ x?: number; y?: number }>,
+  _width = 0,
+  _height = 0,
+  _offset = 0,
+) {
+  if (coordinate?.x == null) return {}
+  return { x: Math.max(8, coordinate.x + 14), y: 10 }
+}
+
+/** 클릭으로 날짜를 고정한 뒤 툴팁 안에서 스크롤 */
+const SCROLLABLE_CHART_TOOLTIP_PROPS = {
+  wrapperStyle: { pointerEvents: 'auto' as const, zIndex: 50 },
+  allowEscapeViewBox: { x: true, y: true },
+  isAnimationActive: false,
+  trigger: 'click' as const,
+  position: chartTooltipAnchorPosition,
+} as unknown as TooltipProps<number, string>
 
 function TooltipMemberRow({
   color,
@@ -128,14 +172,27 @@ function formatMinutesSeconds(totalSeconds: number) {
 function ChartTooltipShell({
   label,
   children,
+  revealStatusOnOpen = false,
 }: {
   label?: string
   children: ReactNode
+  revealStatusOnOpen?: boolean
 }) {
+  useEffect(() => {
+    if (!revealStatusOnOpen) return
+    const timer = window.setTimeout(scrollPortalStatusIntoView, 80)
+    return () => window.clearTimeout(timer)
+  }, [revealStatusOnOpen, label])
+
   return (
-    <div className="rounded-lg border border-lime-500/35 bg-zinc-950/95 px-3 py-2 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm">
-      {label ? <p className="mb-1.5 font-medium text-lime-200">{label}</p> : null}
-      <div className="space-y-1 text-zinc-300">{children}</div>
+    <div className="pointer-events-auto max-w-[min(16rem,82vw)] rounded-md bg-zinc-950/96 px-2.5 py-2 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+      {label ? <p className="mb-1.5 shrink-0 font-medium text-lime-200">{label}</p> : null}
+      <div
+        className={cn('space-y-1 text-zinc-300', SCROLLABLE_TOOLTIP_LIST_CLASS)}
+        onWheel={handleTooltipListWheel}
+      >
+        {children}
+      </div>
     </div>
   )
 }
@@ -176,6 +233,7 @@ function RankComparisonTooltip({
   members,
   memberColorMap,
   isAggregate = false,
+  chaseMemberId = null,
 }: {
   active?: boolean
   payload?: Array<{ name?: string; value?: number; color?: string }>
@@ -183,6 +241,7 @@ function RankComparisonTooltip({
   members: LeagueRankComparisonChart['members']
   memberColorMap: Map<string, string>
   isAggregate?: boolean
+  chaseMemberId?: string | null
 }) {
   if (!active || !payload?.length) return null
   const rows = payload
@@ -200,10 +259,11 @@ function RankComparisonTooltip({
     .sort((a, b) => a.rank - b.rank)
 
   return (
-    <ChartTooltipShell label={label}>
+    <ChartTooltipShell label={label} revealStatusOnOpen={isAggregate}>
       {rows.map((row) => {
+        const isChaseTarget = isChaseTargetMember(row.memberId, chaseMemberId)
         const color = isAggregate
-          ? getMemberChartColor(row.memberId, memberColorMap)
+          ? getMemberChartColor(row.memberId, memberColorMap, chaseMemberId)
           : row.isSelected
             ? LIME_EMPHASIS
             : '#71717a'
@@ -214,6 +274,7 @@ function RankComparisonTooltip({
             name={row.name}
             value={`${row.rank}위`}
             emphasized={!isAggregate && row.isSelected}
+            isChaseTarget={isChaseTarget}
           />
         )
       })}
@@ -251,7 +312,7 @@ function MileageComparisonTooltip({
     .sort((a, b) => b.km - a.km)
 
   return (
-    <ChartTooltipShell label={label}>
+    <ChartTooltipShell label={label} revealStatusOnOpen>
       {rows.map((row) => {
         const isChaseTarget = isChaseTargetMember(row.memberId, chaseMemberId)
         return (
@@ -298,7 +359,7 @@ function AttendanceComparisonTooltip({
     .sort((a, b) => b.days - a.days)
 
   return (
-    <ChartTooltipShell label={label}>
+    <ChartTooltipShell label={label} revealStatusOnOpen>
       {rows.map((row) => (
         <TooltipMemberRow
           key={row.memberId}
@@ -339,7 +400,7 @@ function PbRecordComparisonTooltip({
     .sort((a, b) => a.seconds - b.seconds)
 
   return (
-    <ChartTooltipShell label={label}>
+    <ChartTooltipShell label={label} revealStatusOnOpen>
       {rows.map((row) => (
         <TooltipMemberRow
           key={row.memberId}
@@ -456,11 +517,7 @@ function GraphChartTabs({
 
   if (compact) {
     return (
-      <div
-        className={cn('grid grid-cols-4 gap-1 rounded-lg border border-lime-500/20 bg-black/40 p-1', className)}
-        role="tablist"
-        aria-label="그래프 종류"
-      >
+      <div className={cn('grid grid-cols-4 gap-0.5', className)} role="tablist" aria-label="그래프 종류">
         {tabs.map((tab) => (
           <button
             key={tab.value}
@@ -471,8 +528,8 @@ function GraphChartTabs({
             className={cn(
               'min-h-8 rounded-md px-0.5 text-[10px] font-medium leading-tight transition-colors',
               value === tab.value
-                ? 'bg-lime-500/20 text-lime-100'
-                : 'text-zinc-500 hover:text-zinc-300',
+                ? 'bg-lime-500/15 text-lime-100'
+                : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-300',
             )}
           >
             {tab.label}
@@ -483,7 +540,7 @@ function GraphChartTabs({
   }
 
   return (
-    <div className={cn('flex flex-wrap gap-2', className)} role="tablist" aria-label="그래프 종류">
+    <div className={cn('flex flex-wrap gap-1.5', className)} role="tablist" aria-label="그래프 종류">
       {tabs.map((tab) => (
         <button
           key={tab.value}
@@ -492,10 +549,10 @@ function GraphChartTabs({
           aria-selected={value === tab.value}
           onClick={() => onChange(tab.value)}
           className={cn(
-            'min-h-9 shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+            'min-h-9 shrink-0 rounded-full px-3.5 py-1.5 text-sm transition-colors',
             value === tab.value
-              ? 'border-lime-400/55 bg-lime-500/15 font-medium text-lime-100 shadow-[0_0_14px_rgba(163,230,53,0.1)]'
-              : 'border-lime-500/20 bg-black/50 text-zinc-400 hover:border-lime-500/35 hover:text-zinc-200',
+              ? 'bg-lime-500/15 font-medium text-lime-100'
+              : 'bg-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200',
           )}
         >
           {tab.label}
@@ -586,6 +643,8 @@ export function MemberRankingCharts({
   )
   const activeTab = activeTabProp ?? internalTab
   const setActiveTab = onActiveTabChange ?? setInternalTab
+  /** 술래 빨간 강조는 그래프 '이겨라' 탭에서만 */
+  const chaseHighlightMemberId = activeTab === 'chase' ? chaseMemberId : null
 
   useEffect(() => {
     if (activeTabProp !== undefined) return
@@ -667,7 +726,7 @@ export function MemberRankingCharts({
   )
 
   const chartAxisClass = cn(
-    'w-full min-w-0 max-w-full [&_.recharts-cartesian-axis-tick_text]:fill-zinc-500 [&_.recharts-surface]:overflow-visible',
+    'w-full min-w-0 max-w-full [&_.recharts-cartesian-axis-tick_text]:fill-zinc-500 [&_.recharts-surface]:overflow-visible [&_.recharts-wrapper]:overflow-visible [&_.recharts-tooltip-wrapper]:z-50',
     compact
       ? 'h-[220px] min-h-[220px] max-h-[260px]'
       : 'aspect-[5/2] min-h-[180px]',
@@ -682,7 +741,7 @@ export function MemberRankingCharts({
         : mode === 'attendance'
           ? '러닝 기록을 올리면 출석 순위 그래프가 표시됩니다.'
           : mode === 'chase'
-            ? '러닝 기록을 추가하면 이겨라 순위 그래프가 표시됩니다.'
+            ? '러닝 기록을 추가하면 전체 순위·이겨라 그래프가 표시됩니다.'
           : 'PB를 등록하면 순위 그래프가 표시됩니다.')
 
   const hasAnyChartData =
@@ -748,7 +807,7 @@ export function MemberRankingCharts({
           emphasized={emphasized}
           compact={compact}
           aggregateMode={aggregateMode}
-          chaseMemberId={chaseMemberId}
+          chaseMemberId={chaseHighlightMemberId}
         />
       )
     ) : rankData.length === 0 && !(comparisonChart?.rows?.length ?? 0) ? (
@@ -763,7 +822,7 @@ export function MemberRankingCharts({
         emphasized={emphasized}
         compact={compact}
         aggregateMode={aggregateMode}
-        chaseMemberId={chaseMemberId}
+        chaseMemberId={chaseHighlightMemberId}
       />
     )
 
@@ -774,7 +833,7 @@ export function MemberRankingCharts({
         chartShellClass={chartShellClass}
         chartAxisClass={chartAxisClass}
         compact={compact}
-        chaseMemberId={chaseMemberId}
+        chaseMemberId={chaseHighlightMemberId}
       />
     ) : aggregateMode ? (
       <GraphEmptyState
@@ -803,7 +862,7 @@ export function MemberRankingCharts({
         chartShellClass={chartShellClass}
         chartAxisClass={chartAxisClass}
         compact={compact}
-        chaseMemberId={chaseMemberId}
+        chaseMemberId={chaseHighlightMemberId}
       />
     ) : mileageData.length === 0 ? (
       <GraphEmptyState
@@ -826,28 +885,29 @@ export function MemberRankingCharts({
         compact={compact}
         description="관리자가 술래를 지정하면 이겨라 그래프가 표시됩니다."
       />
-    ) : chaseComparisonChart && chaseComparisonChart.rows.length > 0 ? (
+    ) : (chaseComparisonChart ?? mileageComparisonChart) &&
+      (chaseComparisonChart ?? mileageComparisonChart)!.rows.length > 0 ? (
       <MileageAggregateTrendChart
-        chart={chaseComparisonChart}
+        chart={(chaseComparisonChart ?? mileageComparisonChart)!}
         chartShellClass={chartShellClass}
         chartAxisClass={chartAxisClass}
         compact={compact}
-        chaseMemberId={chaseMemberId}
+        chaseMemberId={chaseHighlightMemberId}
       />
     ) : aggregateMode ? (
       <GraphEmptyState
         compact={compact}
-        description="술래를 이긴 회원이 생기면 이겨라 그래프가 표시됩니다."
+        description="이번 달 러닝 기록이 있으면 전체 순위 그래프가 표시됩니다."
       />
     ) : (
       <GraphEmptyState
         compact={compact}
-        description="술래보다 많이 뛰면 이겨라 그래프에 표시됩니다."
+        description="러닝 기록을 추가하면 이겨라 그래프가 표시됩니다."
       />
     )
 
   return (
-    <div className={cn('grid min-w-0 grid-cols-1', compact ? 'gap-2' : 'gap-3', className)}>
+    <div className={cn('grid min-w-0 grid-cols-1', compact ? 'gap-3' : 'gap-4', className)}>
       <GraphChartTabs value={activeTab} onChange={setActiveTab} compact={compact} />
       {activeTab === 'rank' ? rankPanel : null}
       {activeTab === 'record' ? recordPanel : null}
@@ -1080,6 +1140,7 @@ function AttendanceAggregateTrendChart({
           />
           <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} tickFormatter={(v) => `${v}일`} />
           <Tooltip
+            {...SCROLLABLE_CHART_TOOLTIP_PROPS}
             content={
               <AttendanceComparisonTooltip
                 members={chart.members}
@@ -1180,11 +1241,13 @@ function RankTrendChart({
             />
             <YAxis tickLine={false} axisLine={false} width={28} reversed allowDecimals={false} />
             <Tooltip
+              {...SCROLLABLE_CHART_TOOLTIP_PROPS}
               content={
                 <RankComparisonTooltip
                   members={comparisonMembers}
                   memberColorMap={memberColorMap}
                   isAggregate={isAggregate}
+                  chaseMemberId={chaseMemberId}
                 />
               }
             />
@@ -1329,6 +1392,7 @@ function PbRecordAggregateTrendChart({
             tickFormatter={(value) => formatMinutesSeconds(Number(value))}
           />
           <Tooltip
+            {...SCROLLABLE_CHART_TOOLTIP_PROPS}
             content={
               <PbRecordComparisonTooltip members={chart.members} memberColorMap={memberColorMap} />
             }
@@ -1392,6 +1456,7 @@ function MileageAggregateTrendChart({
           />
           <YAxis tickLine={false} axisLine={false} width={44} tickFormatter={(v) => `${v}km`} />
           <Tooltip
+            {...SCROLLABLE_CHART_TOOLTIP_PROPS}
             content={
               <MileageComparisonTooltip
                 members={chart.members}

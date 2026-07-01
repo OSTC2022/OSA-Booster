@@ -23,6 +23,11 @@ import {
   type MileageDistanceLeaderboard,
   type MileageDistanceRankRow,
 } from '@/lib/running-league/mileage-leaderboard'
+import {
+  buildMemberPortalStatusMessageMap,
+  formatPortalStatusMessageBracket,
+  resolvePortalStatusMessageColor,
+} from '@/lib/running-league/portal-status-message'
 import { formatRankingMemberName } from '@/lib/running-league/mask-member-name'
 import {
   formatAttendanceDaysDisplay,
@@ -99,7 +104,10 @@ import type {
   RunningLeagueRecord,
 } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { buildChaseBeatMileageLeaderboard } from '@/lib/running-league/chase-leaderboard'
+import {
+  buildChaseBeatMileageLeaderboard,
+  resolveChaseTargetMileageKm,
+} from '@/lib/running-league/chase-leaderboard'
 import { buildPortalCoachMemberIds } from '@/lib/running-league/portal-coach-badges'
 import { buildChaseRankingHeaderSummary } from '@/lib/running-league/chase-ranking-header'
 import {
@@ -110,6 +118,7 @@ import { PortalCoachBadge, PortalChaseBadge } from '@/components/dashboard/porta
 import { RANKING_TOP_DISPLAY_COUNT } from '@/lib/running-league/ranking-portal-guards'
 import {
   MEMBER_PORTAL_CARD_CLASS,
+  MEMBER_PORTAL_GRAPH_PANEL_CLASS,
   MEMBER_PORTAL_SHELL_CLASS,
 } from '@/lib/running-league/member-portal-layout'
 import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-brand-header'
@@ -689,13 +698,8 @@ function getLeaderboardTotal(
 
 function resolveRankingEmptyState(view: RankingView, chaseMemberId?: string | null) {
   if (view === 'chase') {
-    if (chaseMemberId) {
-      return {
-        title: '술래 회원을 랭킹에서 찾지 못했습니다.',
-        description: '술래가 성인 러닝 리그에 참여 중인지 확인해주세요.',
-      }
-    }
-    return RANKING_EMPTY_CHASE
+    if (!chaseMemberId) return RANKING_EMPTY_CHASE
+    return RANKING_EMPTY_MILEAGE
   }
   if (view === 'pb') return RANKING_EMPTY_PB
   if (view === 'attendance') return RANKING_EMPTY_ATTENDANCE
@@ -749,30 +753,80 @@ function buildNeighborRankRows<T extends { memberId: string }>(
   return ranked.slice(start, end)
 }
 
+function resolveStatusMessageProps(
+  statusMessageMap: ReturnType<typeof buildMemberPortalStatusMessageMap>,
+  memberId: string,
+) {
+  const entry = statusMessageMap.get(memberId)
+  return {
+    statusMessage: entry?.message ?? null,
+    statusMessageColor: entry?.color ?? null,
+  }
+}
+
+function RankingMemberStatusMessage({
+  message,
+  color,
+  compact = false,
+}: {
+  message?: string | null
+  color?: string | null
+  compact?: boolean
+}) {
+  const label = formatPortalStatusMessageBracket(message)
+  if (!label) return null
+
+  return (
+    <span
+      className={cn(
+        'shrink-0 truncate text-[11px] font-medium leading-tight',
+        compact && 'max-w-[4.75rem]',
+      )}
+      style={{ color: resolvePortalStatusMessageColor(color) }}
+      title={label}
+    >
+      {label}
+    </span>
+  )
+}
+
 function RankingMemberNameCell({
   memberName,
   isMe,
   isSelected,
   chaseBadgeLabel = null,
   isPortalCoach = false,
+  statusMessage = null,
+  statusMessageColor = null,
 }: {
   memberName: string
   isMe: boolean
   isSelected: boolean
   chaseBadgeLabel?: string | null
   isPortalCoach?: boolean
+  statusMessage?: string | null
+  statusMessageColor?: string | null
 }) {
+  const hasBadges = Boolean(chaseBadgeLabel || isPortalCoach)
+
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-      <span
-        className={cn(
-          'min-w-0 shrink truncate font-medium',
-          rankingMemberNameClass(isMe, isSelected, Boolean(chaseBadgeLabel)),
-        )}
-      >
-        {formatRankingMemberName(memberName, { isMe })}
+    <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+      <span className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
+        <span
+          className={cn(
+            'min-w-0 truncate font-medium',
+            rankingMemberNameClass(isMe, isSelected, Boolean(chaseBadgeLabel)),
+          )}
+        >
+          {formatRankingMemberName(memberName, { isMe })}
+        </span>
+        <RankingMemberStatusMessage
+          message={statusMessage}
+          color={statusMessageColor}
+          compact={hasBadges}
+        />
       </span>
-      {chaseBadgeLabel || isPortalCoach ? (
+      {hasBadges ? (
         <span className="flex shrink-0 items-center gap-1">
           {chaseBadgeLabel ? <PortalChaseBadge label={chaseBadgeLabel} /> : null}
           {isPortalCoach ? <PortalCoachBadge /> : null}
@@ -891,6 +945,8 @@ function RankingPreview({
   rankingPeriod,
   chaseMemberId = null,
   chaseLabel = null,
+  chaseTargetKm = null,
+  unfilteredMileageLeaderboard,
 }: {
   rankingView: RankingView
   pbDistance: PbLeaderboardDistance
@@ -911,6 +967,8 @@ function RankingPreview({
   rankingPeriod: PortalRankingPeriod
   chaseMemberId?: string | null
   chaseLabel?: string | null
+  chaseTargetKm?: number | null
+  unfilteredMileageLeaderboard: MileageDistanceLeaderboard
 }) {
   const previewRows =
     rankingView === 'pb'
@@ -935,22 +993,27 @@ function RankingPreview({
       chaseMemberId,
       selectedMemberId,
       chaseLeaderboard: activeChaseLeaderboard,
-      mileageLeaderboard: activeMileageLeaderboard,
+      mileageLeaderboard: unfilteredMileageLeaderboard,
       viewerMemberId: highlightMemberId,
     })
   }, [
     activeChaseLeaderboard,
-    activeMileageLeaderboard,
     chaseMemberId,
     highlightMemberId,
     rankingView,
     selectedMemberId,
+    unfilteredMileageLeaderboard,
   ])
   const chaseTabLabel = resolvePortalChaseLabel(chaseLabel)
 
   const filteredParticipants = rankingBundle
     ? filterParticipantsByGender(rankingBundle.participants, genderFilter)
     : []
+
+  const statusMessageMap = useMemo(
+    () => buildMemberPortalStatusMessageMap(rankingBundle?.participants ?? []),
+    [rankingBundle?.participants],
+  )
 
   function resolveRankDelta(memberId: string, currentRank: number): RankDelta {
     if (!rankingBundle) return RANK_DELTA_SAME
@@ -1076,6 +1139,7 @@ function RankingPreview({
                       isMe={isMe}
                       distanceLabel={formatPbDistanceLabel(pbDistance)}
                       showDistanceLabel={false}
+                      {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
                       rankDelta={resolveRankDelta(row.memberId, row.rank)}
                       onMemberSelect={onMemberSelect}
                       isSelected={selectedMemberId === row.memberId}
@@ -1088,6 +1152,7 @@ function RankingPreview({
                       key={row.participantId}
                       row={row as AttendanceRankRow}
                       isMe={isMe}
+                      {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
                       rankDelta={resolveRankDelta(row.memberId, row.rank)}
                       onMemberSelect={onMemberSelect}
                       isSelected={selectedMemberId === row.memberId}
@@ -1101,8 +1166,8 @@ function RankingPreview({
                       row={row as MileageDistanceRankRow}
                       isMe={isMe}
                       chaseBadgeLabel={chaseBadgeLabel}
+                      {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
                       rankDelta={resolveRankDelta(row.memberId, row.rank)}
-                      showPeriodLabel={false}
                       onMemberSelect={onMemberSelect}
                       isSelected={selectedMemberId === row.memberId}
                     />
@@ -1113,8 +1178,8 @@ function RankingPreview({
                     key={row.participantId}
                     row={row as MileageDistanceRankRow}
                     isMe={isMe}
+                    {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
                     rankDelta={resolveRankDelta(row.memberId, row.rank)}
-                    showPeriodLabel={false}
                     onMemberSelect={onMemberSelect}
                     isSelected={selectedMemberId === row.memberId}
                   />
@@ -1181,7 +1246,11 @@ function resolveMemberCurrentRank(
     return attendanceLeaderboard.ranked.find((row) => row.memberId === memberId)?.rank ?? null
   }
   if (rankingView === 'chase') {
-    return chaseLeaderboard.ranked.find((row) => row.memberId === memberId)?.rank ?? null
+    return (
+      mileageLeaderboard.ranked.find((row) => row.memberId === memberId)?.rank ??
+      chaseLeaderboard.ranked.find((row) => row.memberId === memberId)?.rank ??
+      null
+    )
   }
   return mileageLeaderboard.ranked.find((row) => row.memberId === memberId)?.rank ?? null
 }
@@ -1214,6 +1283,8 @@ function PbRankingRow({
   isPortalCoach = false,
   chaseBadgeLabel = null,
   distanceLabel,
+  statusMessage = null,
+  statusMessageColor = null,
   rankDelta = RANK_DELTA_SAME,
   onMemberSelect,
   isSelected,
@@ -1225,6 +1296,8 @@ function PbRankingRow({
   isPortalCoach?: boolean
   chaseBadgeLabel?: string | null
   distanceLabel: string
+  statusMessage?: string | null
+  statusMessageColor?: string | null
   rankDelta?: RankDelta
   onMemberSelect?: (memberId: string, memberName: string) => void
   isSelected?: boolean
@@ -1255,12 +1328,14 @@ function PbRankingRow({
         isSelected={isRowSelected}
         chaseBadgeLabel={chaseBadgeLabel}
         isPortalCoach={isPortalCoach}
+        statusMessage={statusMessage}
+        statusMessageColor={statusMessageColor}
       />
       {showDistanceLabel ? (
         <span className="shrink-0 text-xs text-zinc-500">{distanceLabel}</span>
       ) : null}
       <span
-        className={cn('shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
+        className={cn('ml-auto shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
       >
         {row.timeText}
       </span>
@@ -1274,21 +1349,23 @@ function MileageRankingRow({
   isMe,
   isPortalCoach = false,
   chaseBadgeLabel = null,
+  statusMessage = null,
+  statusMessageColor = null,
   rankDelta = RANK_DELTA_SAME,
   onMemberSelect,
   isSelected,
   scrollAnchor = false,
-  showPeriodLabel = true,
 }: {
   row: MileageDistanceRankRow
   isMe: boolean
   isPortalCoach?: boolean
   chaseBadgeLabel?: string | null
+  statusMessage?: string | null
+  statusMessageColor?: string | null
   rankDelta?: RankDelta
   onMemberSelect?: (memberId: string, memberName: string) => void
   isSelected?: boolean
   scrollAnchor?: boolean
-  showPeriodLabel?: boolean
 }) {
   const isRowSelected = Boolean(isSelected)
 
@@ -1314,12 +1391,11 @@ function MileageRankingRow({
         isSelected={isRowSelected}
         chaseBadgeLabel={chaseBadgeLabel}
         isPortalCoach={isPortalCoach}
+        statusMessage={statusMessage}
+        statusMessageColor={statusMessageColor}
       />
-      {showPeriodLabel ? (
-        <span className="shrink-0 text-xs text-zinc-500">이번 달</span>
-      ) : null}
       <span
-        className={cn('shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
+        className={cn('ml-auto shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
       >
         {formatMileageKmDisplay(row.mileageKm)}
       </span>
@@ -1333,21 +1409,23 @@ function AttendanceRankingRow({
   isMe,
   isPortalCoach = false,
   chaseBadgeLabel = null,
+  statusMessage = null,
+  statusMessageColor = null,
   rankDelta = RANK_DELTA_SAME,
   onMemberSelect,
   isSelected,
   scrollAnchor = false,
-  showPeriodLabel = true,
 }: {
   row: AttendanceRankRow
   isMe: boolean
   isPortalCoach?: boolean
   chaseBadgeLabel?: string | null
+  statusMessage?: string | null
+  statusMessageColor?: string | null
   rankDelta?: RankDelta
   onMemberSelect?: (memberId: string, memberName: string) => void
   isSelected?: boolean
   scrollAnchor?: boolean
-  showPeriodLabel?: boolean
 }) {
   const isRowSelected = Boolean(isSelected)
 
@@ -1373,12 +1451,11 @@ function AttendanceRankingRow({
         isSelected={isRowSelected}
         chaseBadgeLabel={chaseBadgeLabel}
         isPortalCoach={isPortalCoach}
+        statusMessage={statusMessage}
+        statusMessageColor={statusMessageColor}
       />
-      {showPeriodLabel ? (
-        <span className="shrink-0 text-xs text-zinc-500">이번 달</span>
-      ) : null}
       <span
-        className={cn('shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
+        className={cn('ml-auto shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
       >
         {formatAttendanceDaysDisplay(row.attendanceDays)}
       </span>
@@ -1435,6 +1512,11 @@ function PbRankingList({
     [rankingBundle?.participants],
   )
 
+  const statusMessageMap = useMemo(
+    () => buildMemberPortalStatusMessageMap(rankingBundle?.participants ?? []),
+    [rankingBundle?.participants],
+  )
+
   const rankDeltaMap = useMemo(() => {
     if (!rankingBundle) return new Map<string, RankDelta>()
     return buildRankDeltaMap(displayRows, (memberId, currentRank) =>
@@ -1477,6 +1559,7 @@ function PbRankingList({
               isMe={isMe}
               isPortalCoach={portalCoachMemberIds.has(row.memberId)}
               distanceLabel={distanceLabel}
+              {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
               rankDelta={rankDeltaMap.get(row.memberId) ?? RANK_DELTA_SAME}
               onMemberSelect={onMemberSelect}
               isSelected={selectedMemberId === row.memberId}
@@ -1531,6 +1614,7 @@ function MileageRankingList({
   showChaseBadges = false,
   chaseMemberId = null,
   chaseLabel = null,
+  chaseTargetKm = null,
   rankingBundle = null,
   genderFilter = 'all',
 }: {
@@ -1543,6 +1627,7 @@ function MileageRankingList({
   showChaseBadges?: boolean
   chaseMemberId?: string | null
   chaseLabel?: string | null
+  chaseTargetKm?: number | null
   rankingBundle?: MemberRunningLeagueRankingBundle | null
   genderFilter?: RankingGenderFilter
 }) {
@@ -1566,6 +1651,11 @@ function MileageRankingList({
         ? filterParticipantsByGender(rankingBundle.participants, genderFilter)
         : [],
     [genderFilter, rankingBundle],
+  )
+
+  const statusMessageMap = useMemo(
+    () => buildMemberPortalStatusMessageMap(rankingBundle?.participants ?? []),
+    [rankingBundle?.participants],
   )
 
   const rankDeltaMap = useMemo(() => {
@@ -1613,11 +1703,11 @@ function MileageRankingList({
               isMe={isMe}
               isPortalCoach={portalCoachMemberIds.has(row.memberId)}
               chaseBadgeLabel={chaseBadgeLabel}
+              {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
               rankDelta={rankDeltaMap.get(row.memberId) ?? RANK_DELTA_SAME}
               onMemberSelect={onMemberSelect}
               isSelected={selectedMemberId === row.memberId}
               scrollAnchor={isMe}
-              showPeriodLabel={!showAllRanks}
             />
           )
         })}
@@ -1704,6 +1794,11 @@ function AttendanceRankingList({
     [genderFilter, rankingBundle],
   )
 
+  const statusMessageMap = useMemo(
+    () => buildMemberPortalStatusMessageMap(rankingBundle?.participants ?? []),
+    [rankingBundle?.participants],
+  )
+
   const rankDeltaMap = useMemo(() => {
     if (!rankingBundle) return new Map<string, RankDelta>()
     const { start, end } = rankingBundle.rankingPeriod
@@ -1747,11 +1842,11 @@ function AttendanceRankingList({
               row={row}
               isMe={isMe}
               isPortalCoach={portalCoachMemberIds.has(row.memberId)}
+              {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
               rankDelta={rankDeltaMap.get(row.memberId) ?? RANK_DELTA_SAME}
               onMemberSelect={onMemberSelect}
               isSelected={selectedMemberId === row.memberId}
               scrollAnchor={isMe}
-              showPeriodLabel={!showAllRanks}
             />
           )
         })}
@@ -1956,6 +2051,7 @@ function FullRankingDialog({
   unclassifiedCount = 0,
   chaseMemberId = null,
   chaseLabel = null,
+  chaseTargetKm = null,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -1977,6 +2073,7 @@ function FullRankingDialog({
   unclassifiedCount?: number
   chaseMemberId?: string | null
   chaseLabel?: string | null
+  chaseTargetKm?: number | null
 }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
@@ -2055,7 +2152,7 @@ function FullRankingDialog({
       : rankingView === 'attendance'
         ? '출석 랭킹'
         : rankingView === 'chase'
-          ? '이겨라 랭킹'
+          ? '이겨라 · 마일리지 전체 순위'
         : '월 마일리지 랭킹'
   const genderScopeLabel = getGenderFilterScopeLabel(genderFilter)
 
@@ -2196,6 +2293,7 @@ function FullRankingDialog({
               showChaseBadges={rankingView === 'chase'}
               chaseMemberId={chaseMemberId}
               chaseLabel={chaseLabel}
+              chaseTargetKm={chaseTargetKm}
               rankingBundle={rankingBundle}
               genderFilter={genderFilter}
             />
@@ -2367,6 +2465,15 @@ export function MemberRunningLeagueRankings({
       portalParticipants,
       unfilteredMileageLeaderboard,
     ],
+  )
+  const chaseTargetMileageKm = useMemo(
+    () =>
+      resolveChaseTargetMileageKm(
+        unfilteredMileageLeaderboard,
+        chaseMemberId,
+        portalParticipants,
+      ),
+    [chaseMemberId, portalParticipants, unfilteredMileageLeaderboard],
   )
   const activeRankedCount =
     rankingView === 'pb'
@@ -2547,7 +2654,7 @@ export function MemberRunningLeagueRankings({
       graphChartTab={graphChartTab}
       onGraphChartTabChange={handleGraphChartTabChange}
       chaseMemberId={chaseMemberId}
-      className={MEMBER_PORTAL_CARD_CLASS}
+      className={MEMBER_PORTAL_GRAPH_PANEL_CLASS}
       canManageMemberLogs={canManageMemberLogs}
     />
   ) : rankingBundle ? (
@@ -2560,7 +2667,7 @@ export function MemberRunningLeagueRankings({
       onGraphChartTabChange={handleGraphChartTabChange}
       chaseMemberId={chaseMemberId}
       mobileFilterSlot={graphFilterStrip}
-      className={MEMBER_PORTAL_CARD_CLASS}
+      className={MEMBER_PORTAL_GRAPH_PANEL_CLASS}
     />
   ) : (
     <div className={MEMBER_PORTAL_CARD_CLASS}>
@@ -2620,6 +2727,8 @@ export function MemberRunningLeagueRankings({
           rankingPeriod={effectiveRankingPeriod}
           chaseMemberId={chaseMemberId}
           chaseLabel={chaseLabel}
+          chaseTargetKm={chaseTargetMileageKm}
+          unfilteredMileageLeaderboard={unfilteredMileageLeaderboard}
         />
 
         <div ref={graphPanelRef} className="scroll-mt-4">
@@ -2630,7 +2739,7 @@ export function MemberRunningLeagueRankings({
           <MemberLeagueStatusCard
             snapshot={leagueStatus}
             compact
-            className={cn(MEMBER_PORTAL_CARD_CLASS, 'border-lime-400/30')}
+            className={cn(MEMBER_PORTAL_CARD_CLASS, 'scroll-mt-20 border-lime-400/30')}
           />
         ) : null}
 
@@ -2661,6 +2770,7 @@ export function MemberRunningLeagueRankings({
         unclassifiedCount={unclassifiedCount}
         chaseMemberId={chaseMemberId}
         chaseLabel={chaseLabel}
+        chaseTargetKm={chaseTargetMileageKm}
       />
 
       <MemberRunningPbDialog

@@ -16,8 +16,8 @@ export const RANKING_EMPTY_ATTENDANCE = {
 } as const
 
 export const RANKING_EMPTY_CHASE = {
-  title: '아직 술래를 이긴 회원이 없습니다.',
-  description: '술래보다 많이 뛰면 이겨라 랭킹에 표시됩니다.',
+  title: '이겨라 술래가 지정되지 않았습니다.',
+  description: '술래가 지정되면 마일리지 전체 순위와 술래 대비 격차가 표시됩니다.',
 } as const
 
 export const RANKING_EMPTY_GRAPH = {

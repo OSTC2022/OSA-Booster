@@ -53,8 +53,11 @@ export function buildChaseRankingHeaderSummary(input: {
 
   const memberName = chaseRow?.memberName ?? mileageRow?.memberName ?? '회원'
   const rank =
-    chaseRow?.rank ??
-    (mileageRow && 'rank' in mileageRow ? mileageRow.rank : input.chaseLeaderboard.ranked.length + 1)
+    mileageRow && 'rank' in mileageRow
+      ? mileageRow.rank
+      : (chaseRow?.rank ??
+        input.mileageLeaderboard.ranked.find((row) => row.memberId === targetMemberId)?.rank ??
+        input.mileageLeaderboard.ranked.length + 1)
   const targetKm = chaseRow?.mileageKm ?? resolveMemberMileageKm(input.mileageLeaderboard, targetMemberId)
 
   let gapLabel: string

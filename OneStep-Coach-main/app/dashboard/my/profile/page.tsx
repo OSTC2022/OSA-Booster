@@ -17,6 +17,10 @@ export default async function MemberProfilePage() {
       backLabel="홈"
       memberGender={settings?.gender ?? null}
       showMemberGender={isAdultPortalUser(profile.role)}
+      portalStatusMessage={settings?.portal_status_message ?? ''}
+      portalStatusMessageColor={settings?.portal_status_message_color}
+      showPortalStatusMessage={isAdultPortalUser(profile.role)}
+      hasLinkedMember={settings?.has_linked_member ?? false}
     />
   )
 }

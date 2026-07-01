@@ -53,7 +53,7 @@ function resolveRankedMembersAtLatest(input: {
   participants: ReadonlyArray<RunningLeagueParticipant>
   logs: ReadonlyArray<RunningLeagueMileageLog>
   latestDate: string
-  maxMembers: number
+  maxMembers?: number
   mileageRecognition?: MileageRecognition | null
 }): Array<{ memberId: string; memberName: string; km: number }> {
   const rows = input.participants
@@ -72,9 +72,9 @@ function resolveRankedMembersAtLatest(input: {
     })
     .filter((row) => row.km > 0)
     .sort((a, b) => b.km - a.km || a.memberName.localeCompare(b.memberName, 'ko'))
-    .slice(0, input.maxMembers)
 
-  return rows
+  if (input.maxMembers == null) return rows
+  return rows.slice(0, input.maxMembers)
 }
 
 /** 전체 회원 월 마일리지 누적 비교 */
@@ -92,7 +92,7 @@ export function buildLeagueMileageComparisonChart(input: {
     participants: input.participants,
     logs: input.logs,
     latestDate,
-    maxMembers: input.maxMembers ?? 20,
+    maxMembers: input.maxMembers ?? input.participants.length,
     mileageRecognition: input.mileageRecognition,
   })
   if (rankedMembers.length === 0) return null
@@ -137,7 +137,7 @@ export function buildLeagueAggregateMileageRankComparisonChart(input: {
     participants: input.participants,
     logs: input.logs,
     latestDate,
-    maxMembers: input.maxMembers ?? 20,
+    maxMembers: input.maxMembers ?? input.participants.length,
     mileageRecognition: input.mileageRecognition,
   })
   if (rankedMembers.length === 0) return null
