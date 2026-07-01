@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button'
 import { MemberCenterContactCard } from '@/components/members/member-center-contact-card'
 import { MemberRunningLeagueRankings } from '@/components/dashboard/member-running-league-rankings'
 import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-brand-header'
+import { AttendanceRouletteWheel } from '@/components/dashboard/attendance-roulette-wheel'
 import { MemberPortalNoticePanel } from '@/components/dashboard/member-portal-notice-panel'
 import {
   MemberRunningLeagueTrainingSchedule,
@@ -39,6 +40,7 @@ import type { AdultPortalBrandConfig } from '@/lib/adult-portal-brand'
 import { formatPackageExpiryDateLabel } from '@/lib/session-package-utils'
 import { MEMBER_PORTAL_SHELL_CLASS } from '@/lib/running-league/member-portal-layout'
 import { isAdultPortalUser } from '@/lib/member-portal-routes'
+import { canAccessSettingsArea } from '@/lib/operator-access'
 import { cn } from '@/lib/utils'
 
 interface MemberMyPageProps {
@@ -165,7 +167,17 @@ export function MemberMyPage({
 
       {isAdultMember ? (
         <section className={cn(MEMBER_PORTAL_SHELL_CLASS, 'flex flex-col gap-2.5 sm:gap-4')}>
-          <MemberPortalBrandHeader brand={adultPortalBrand} />
+          <MemberPortalBrandHeader
+            brand={adultPortalBrand}
+            action={
+              runningLeagueHome?.rankingBundle ? (
+                <AttendanceRouletteWheel
+                  rankingBundle={runningLeagueHome.rankingBundle}
+                  canSpin={canAccessSettingsArea(role)}
+                />
+              ) : null
+            }
+          />
           <MemberPortalNoticePanel notice={adultPortalNotice} />
           <MemberRunningLeagueTrainingSchedule
             days={trainingScheduleDays}

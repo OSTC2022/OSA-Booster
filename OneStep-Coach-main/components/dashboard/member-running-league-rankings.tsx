@@ -101,7 +101,11 @@ import type {
 import { cn } from '@/lib/utils'
 import { buildChaseBeatMileageLeaderboard } from '@/lib/running-league/chase-leaderboard'
 import { buildPortalCoachMemberIds } from '@/lib/running-league/portal-coach-badges'
-import { resolveChaseBadgeLabelForMember } from '@/lib/running-league/portal-chase-label'
+import { buildChaseRankingHeaderSummary } from '@/lib/running-league/chase-ranking-header'
+import {
+  resolveChaseBadgeLabelForMember,
+  resolvePortalChaseLabel,
+} from '@/lib/running-league/portal-chase-label'
 import { PortalCoachBadge, PortalChaseBadge } from '@/components/dashboard/portal-ranking-badges'
 import { RANKING_TOP_DISPLAY_COUNT } from '@/lib/running-league/ranking-portal-guards'
 import {
@@ -921,8 +925,27 @@ function RankingPreview({
       : rankingView === 'attendance'
         ? '출석'
         : rankingView === 'chase'
-          ? '이겨라'
+          ? resolvePortalChaseLabel(chaseLabel)
         : rankingPeriod.label
+
+  const chaseHeaderSummary = useMemo(() => {
+    if (rankingView !== 'chase' || !chaseMemberId) return null
+    return buildChaseRankingHeaderSummary({
+      chaseMemberId,
+      selectedMemberId,
+      chaseLeaderboard: activeChaseLeaderboard,
+      mileageLeaderboard: activeMileageLeaderboard,
+      viewerMemberId: highlightMemberId,
+    })
+  }, [
+    activeChaseLeaderboard,
+    activeMileageLeaderboard,
+    chaseMemberId,
+    highlightMemberId,
+    rankingView,
+    selectedMemberId,
+  ])
+  const chaseTabLabel = resolvePortalChaseLabel(chaseLabel)
 
   const filteredParticipants = rankingBundle
     ? filterParticipantsByGender(rankingBundle.participants, genderFilter)
@@ -968,7 +991,7 @@ function RankingPreview({
   return (
     <div className={MEMBER_PORTAL_CARD_CLASS}>
       <div className="flex items-center justify-between gap-2 border-b border-lime-500/15 px-3 py-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <span className="shrink-0 text-sm font-semibold text-lime-100">랭킹</span>
           {rankingView === 'pb' ? (
             <span
@@ -979,6 +1002,19 @@ function RankingPreview({
             >
               {formatPbDistanceLabel(pbDistance)}
             </span>
+          ) : rankingView === 'chase' && chaseHeaderSummary ? (
+            <>
+              <span
+                className="min-w-0 truncate text-sm font-semibold tabular-nums text-red-100"
+                title={`${chaseHeaderSummary.rank}위-${chaseHeaderSummary.memberName}/${chaseHeaderSummary.gapLabel}`}
+              >
+                {chaseHeaderSummary.rank}위-{chaseHeaderSummary.memberName}
+                <span className="font-normal text-red-200/80">
+                  /{chaseHeaderSummary.gapLabel}
+                </span>
+              </span>
+              <span className="shrink-0 text-sm font-medium text-red-300">{chaseTabLabel}</span>
+            </>
           ) : viewLabel ? (
             <span
               className={cn(

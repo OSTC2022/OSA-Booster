@@ -48,20 +48,38 @@ function TooltipMemberRow({
   name,
   value,
   emphasized = false,
+  isChaseTarget = false,
 }: {
   color: string
   name: string
   value: ReactNode
   emphasized?: boolean
+  isChaseTarget?: boolean
 }) {
   return (
-    <p className={cn('flex items-center gap-2', emphasized && 'font-semibold')}>
+    <p
+      className={cn(
+        'flex items-center gap-2 rounded-sm',
+        emphasized && 'font-semibold',
+        isChaseTarget && 'bg-red-500/10 px-1 -mx-1',
+      )}
+    >
       <span
-        className="h-2 w-2 shrink-0 rounded-full ring-1 ring-white/15"
+        className={cn(
+          'h-2 w-2 shrink-0 rounded-full ring-1 ring-white/15',
+          isChaseTarget && 'ring-2 ring-red-400/70',
+        )}
         style={{ backgroundColor: color }}
         aria-hidden
       />
-      <span className="min-w-0 flex-1 truncate text-zinc-200">{name}</span>
+      <span
+        className={cn(
+          'min-w-0 flex-1 truncate',
+          isChaseTarget ? 'font-semibold text-red-50' : 'text-zinc-200',
+        )}
+      >
+        {name}
+      </span>
       <span className="shrink-0 tabular-nums" style={{ color }}>
         {value}
       </span>
@@ -234,14 +252,18 @@ function MileageComparisonTooltip({
 
   return (
     <ChartTooltipShell label={label}>
-      {rows.map((row) => (
-        <TooltipMemberRow
-          key={row.memberId}
-          color={getMemberChartColor(row.memberId, memberColorMap, chaseMemberId)}
-          name={row.name}
-          value={`${row.km.toFixed(1)}km`}
-        />
-      ))}
+      {rows.map((row) => {
+        const isChaseTarget = isChaseTargetMember(row.memberId, chaseMemberId)
+        return (
+          <TooltipMemberRow
+            key={row.memberId}
+            color={getMemberChartColor(row.memberId, memberColorMap, chaseMemberId)}
+            name={row.name}
+            value={`${row.km.toFixed(1)}km`}
+            isChaseTarget={isChaseTarget}
+          />
+        )
+      })}
     </ChartTooltipShell>
   )
 }

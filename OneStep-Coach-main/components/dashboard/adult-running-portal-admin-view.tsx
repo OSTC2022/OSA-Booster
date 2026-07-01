@@ -2,6 +2,7 @@
 
 import { MemberRunningLeagueRankings } from '@/components/dashboard/member-running-league-rankings'
 import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-brand-header'
+import { AttendanceRouletteWheel } from '@/components/dashboard/attendance-roulette-wheel'
 import { MemberRunningLeagueTrainingSchedule } from '@/components/dashboard/member-running-league-training-schedule'
 import { MemberPortalNoticePanel } from '@/components/dashboard/member-portal-notice-panel'
 import type { MemberRunningLeagueHome } from '@/lib/actions/running-league'
@@ -49,7 +50,17 @@ export function AdultRunningPortalAdminView({
   return (
     <div className="mx-auto w-full max-w-[1120px]">
       <section className={cn(MEMBER_PORTAL_SHELL_CLASS, 'flex flex-col gap-2.5 sm:gap-4')}>
-        <MemberPortalBrandHeader brand={portalBrand} />
+        <MemberPortalBrandHeader
+          brand={portalBrand}
+          action={
+            runningLeagueHome.rankingBundle ? (
+              <AttendanceRouletteWheel
+                rankingBundle={runningLeagueHome.rankingBundle}
+                canSpin
+              />
+            ) : null
+          }
+        />
         <MemberPortalNoticePanel notice={adultPortalNotice} />
         <MemberRunningLeagueTrainingSchedule
           days={trainingScheduleDays}

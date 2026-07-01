@@ -5,10 +5,19 @@ import {
   isChaseTargetMember,
 } from '@/lib/running-league/portal-chase-target'
 
+/** 술래 전용 빨강(CHASE_TARGET_CHART_COLOR)과 겹치지 않도록 팔레트에서 제외 */
+const CHASE_HUE_EXCLUSION = 28
+
+function memberPaletteHue(index: number, total: number): number {
+  if (total <= 1) return 168
+  const usableArc = 360 - CHASE_HUE_EXCLUSION * 2
+  const start = CHASE_HUE_EXCLUSION
+  return Math.round(start + (index * usableArc) / Math.max(total - 1, 1)) % 360
+}
+
 export function memberChartColorAtIndex(index: number, total: number): string {
   if (total <= 0) return '#a3e635'
-  if (total === 1) return '#a3e635'
-  const hue = Math.round((index * 360) / total) % 360
+  const hue = memberPaletteHue(index, total)
   const saturation = 68 + (index % 2) * 6
   const lightness = 54 + (index % 3) * 4
   return `hsl(${hue} ${saturation}% ${lightness}%)`

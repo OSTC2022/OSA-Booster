@@ -32,8 +32,8 @@ export function MemberPortalBrandHeader({ brand, action }: MemberPortalBrandHead
   const titleStyle = buildTextStyle(config.titleColor, config.titleSize, config.titleWeight)
 
   return (
-    <div className="space-y-2">
-      <div className="space-y-1">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1 space-y-1">
         <p
           className={cn(
             'font-semibold uppercase tracking-[0.18em]',
@@ -55,7 +55,7 @@ export function MemberPortalBrandHeader({ brand, action }: MemberPortalBrandHead
           {config.title}
         </h1>
       </div>
-      {action}
+      {action ? <div className="shrink-0 pt-0.5">{action}</div> : null}
     </div>
   )
 }
