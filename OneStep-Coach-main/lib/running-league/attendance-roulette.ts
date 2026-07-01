@@ -60,6 +60,19 @@ export function computeAttendanceRouletteRotationDegrees(
   return extraSpins * 360 + (360 - slotCenter)
 }
 
+/** 회전 각도에서 포인터(12시) 아래 슬롯 인덱스 역산 */
+export function resolveAttendanceRouletteSlotFromRotation(
+  rotationDegrees: number,
+  totalSlots: number,
+): number {
+  if (totalSlots <= 0) return 0
+  const slotAngle = 360 / totalSlots
+  const normalized = ((rotationDegrees % 360) + 360) % 360
+  const center = (360 - normalized) % 360
+  const slotIndex = Math.floor(center / slotAngle)
+  return Math.min(Math.max(slotIndex, 0), totalSlots - 1)
+}
+
 export function summarizeAttendanceRouletteOdds(
   members: ReadonlyArray<AttendanceRouletteMember>,
 ): Array<AttendanceRouletteMember & { slotCount: number; oddsPercent: number }> {

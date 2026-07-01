@@ -17,6 +17,7 @@ import {
   buildAttendanceRouletteSlots,
   computeAttendanceRouletteRotationDegrees,
   pickAttendanceRouletteWinner,
+  resolveAttendanceRouletteSlotFromRotation,
   summarizeAttendanceRouletteOdds,
   type AttendanceRouletteSlot,
 } from '@/lib/running-league/attendance-roulette'
@@ -47,11 +48,12 @@ function RouletteWheelDisc({
 }) {
   const gradient = useMemo(() => {
     if (slots.length === 0) return 'conic-gradient(#27272a 0deg 360deg)'
-    return `conic-gradient(from -90deg, ${slots
+    const slotAngle = 360 / slots.length
+    return `conic-gradient(from 0deg, ${slots
       .map((slot, index) => {
-        const start = (index / slots.length) * 100
-        const end = ((index + 1) / slots.length) * 100
-        return `${slot.color} ${start}% ${end}%`
+        const start = index * slotAngle
+        const end = (index + 1) * slotAngle
+        return `${slot.color} ${start}deg ${end}deg`
       })
       .join(', ')})`
   }, [slots])
@@ -64,22 +66,24 @@ function RouletteWheelDisc({
       >
         <div className="h-0 w-0 border-x-[10px] border-x-transparent border-b-[16px] border-b-lime-300 drop-shadow-[0_0_8px_rgba(163,230,53,0.45)]" />
       </div>
-      <div
-        className={cn(
-          'absolute inset-0 rounded-full border-4 border-lime-500/35 shadow-[0_0_32px_rgba(163,230,53,0.12)]',
-          spinning && 'will-change-transform',
-        )}
-        style={{
-          background: gradient,
-          transform: `rotate(${rotation}deg)`,
-          transition: spinning
-            ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.82, 0.16, 1)`
-            : undefined,
-        }}
-      />
+      <div className="absolute inset-0 rounded-full border-2 border-zinc-700/90 bg-zinc-950 p-[3px] shadow-[0_0_24px_rgba(0,0,0,0.45)]">
+        <div
+          className={cn(
+            'h-full w-full overflow-hidden rounded-full',
+            spinning && 'will-change-transform',
+          )}
+          style={{
+            background: gradient,
+            transform: `rotate(${rotation}deg)`,
+            transition: spinning
+              ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.82, 0.16, 1)`
+              : undefined,
+          }}
+        />
+      </div>
       <div className="pointer-events-none absolute inset-[28%] rounded-full border border-white/10 bg-zinc-950/90 shadow-inner" />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="rounded-full border border-lime-500/25 bg-zinc-950/80 px-3 py-1.5 text-center text-[10px] font-semibold text-lime-200">
+        <div className="rounded-full border border-zinc-600/50 bg-zinc-950/90 px-3 py-1.5 text-center text-[10px] font-semibold text-lime-200">
           {slots.length}칸
         </div>
       </div>
@@ -142,8 +146,9 @@ export function AttendanceRouletteWheel({
     setRotation(target)
 
     window.setTimeout(() => {
+      const resolvedIndex = resolveAttendanceRouletteSlotFromRotation(target, slots.length)
       setSpinning(false)
-      setWinner(picked)
+      setWinner(slots[resolvedIndex] ?? picked)
     }, SPIN_DURATION_MS)
   }
 
