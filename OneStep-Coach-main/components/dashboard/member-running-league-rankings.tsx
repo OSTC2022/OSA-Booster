@@ -2520,10 +2520,14 @@ export function MemberRunningLeagueRankings({
       mileageLogs: rankingBundle.mileageLogs,
       periodStart: start,
       periodEnd: end,
-      limit: 5,
+      limit: 12,
       mileageRecognition: rankingBundle.mileageRecognition,
+      chaseMemberId,
+      chaseLabel,
     })
   }, [
+    chaseLabel,
+    chaseMemberId,
     effectiveRankingPeriod,
     genderFilter,
     rankingBundle,

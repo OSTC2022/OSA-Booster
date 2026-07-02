@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, ClipboardList, Home, LineChart, Trophy } from 'lucide-react'
+import { CalendarDays, ClipboardList, Home, LineChart, Trophy, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isAdultPortalUser } from '@/lib/member-portal-routes'
 
@@ -35,6 +35,12 @@ const ATHLETE_NAV_ITEMS = [
     icon: CalendarDays,
     isActive: (path: string, hash: string) => path.startsWith('/dashboard/my/sessions'),
   },
+  {
+    href: '/dashboard/my/profile',
+    label: '프로필',
+    icon: User,
+    isActive: (path: string, _hash: string) => path.startsWith('/dashboard/my/profile'),
+  },
 ] as const
 
 const ADULT_NAV_ITEMS = [
@@ -63,6 +69,12 @@ const ADULT_NAV_ITEMS = [
     icon: CalendarDays,
     isActive: (path: string, _hash: string) => path.startsWith('/dashboard/my/sessions'),
   },
+  {
+    href: '/dashboard/my/profile',
+    label: '프로필',
+    icon: User,
+    isActive: (path: string, _hash: string) => path.startsWith('/dashboard/my/profile'),
+  },
 ] as const
 
 interface MemberPortalBottomNavProps {
@@ -90,7 +102,7 @@ export function MemberPortalBottomNav({ role }: MemberPortalBottomNavProps) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-      <div className="mx-auto grid max-w-[1120px] grid-cols-4 px-2">
+      <div className="mx-auto grid max-w-[1120px] grid-cols-5 px-1">
         {navItems.map((item) => {
           const active = item.isActive(pathname, hash)
           const Icon = item.icon
@@ -100,7 +112,7 @@ export function MemberPortalBottomNav({ role }: MemberPortalBottomNavProps) {
               href={item.href}
               scroll={false}
               className={cn(
-                'flex min-h-[56px] flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors',
+                'flex min-h-[56px] flex-col items-center justify-center gap-0.5 px-0.5 text-[9px] font-medium transition-colors touch-manipulation sm:text-[10px]',
                 active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
               )}
             >

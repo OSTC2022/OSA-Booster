@@ -1,9 +1,10 @@
 'use client'
 
 import type { ReactNode, WheelEvent } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import {
   CartesianGrid,
+  Customized,
   Line,
   LineChart,
   Tooltip,
@@ -68,24 +69,149 @@ function scrollPortalStatusIntoView() {
   })
 }
 
-function chartTooltipAnchorPosition(
+const TOOLTIP_PIN_TOP_Y = 8
+
+function usePinTooltipToTop(
+  active?: boolean,
   coordinate?: Partial<{ x?: number; y?: number }>,
-  _width = 0,
-  _height = 0,
-  _offset = 0,
+  viewBox?: Partial<{ width?: number; height?: number }>,
 ) {
-  if (coordinate?.x == null) return {}
-  return { x: Math.max(8, coordinate.x + 14), y: 10 }
+  useLayoutEffect(() => {
+    if (!active || coordinate?.x == null) return
+
+    const applyPin = () => {
+      const wrappers = document.querySelectorAll<HTMLElement>('.recharts-tooltip-wrapper')
+      const wrapper = wrappers[wrappers.length - 1]
+      if (!wrapper) return
+
+      const tooltipWidth = wrapper.getBoundingClientRect().width || 200
+      const chartWidth = viewBox?.width ?? 0
+      const gap = 3
+      const edgePadding = 4
+      const pastCenter = chartWidth > 0 && coordinate.x >= chartWidth / 2
+
+      let x = pastCenter
+        ? coordinate.x - tooltipWidth - gap
+        : coordinate.x + gap
+
+      if (chartWidth > 0) {
+        x = Math.min(Math.max(edgePadding, x), chartWidth - tooltipWidth - edgePadding)
+      } else {
+        x = Math.max(edgePadding, x)
+      }
+
+      wrapper.style.transform = `translate3d(${x}px, ${TOOLTIP_PIN_TOP_Y}px, 0)`
+    }
+
+    applyPin()
+    const frame = window.requestAnimationFrame(applyPin)
+    return () => window.cancelAnimationFrame(frame)
+  }, [active, coordinate?.x, coordinate?.y, viewBox?.width])
 }
 
 /** 클릭으로 날짜를 고정한 뒤 툴팁 안에서 스크롤 */
 const SCROLLABLE_CHART_TOOLTIP_PROPS = {
   wrapperStyle: { pointerEvents: 'auto' as const, zIndex: 50 },
-  allowEscapeViewBox: { x: true, y: true },
+  allowEscapeViewBox: { x: true, y: false },
   isAnimationActive: false,
   trigger: 'click' as const,
-  position: chartTooltipAnchorPosition,
+  cursor: false,
+  offset: 0,
 } as unknown as TooltipProps<number, string>
+
+/** 전체 회원 비교 그래프 — 좌우 여백 균형 */
+function aggregateComparisonChartMargin(compact?: boolean) {
+  return compact
+    ? { left: 2, right: 8, top: 8, bottom: 0 }
+    : { left: 4, right: 8, top: 8, bottom: 0 }
+}
+
+const AGGREGATE_COMPARISON_X_AXIS_PROPS = {
+  dataKey: 'label' as const,
+  tickLine: false,
+  axisLine: false,
+  interval: 'preserveStartEnd' as const,
+  minTickGap: 24,
+  padding: { left: 4, right: 4 },
+}
+
+type AggregateLineEndLabelEntry = {
+  dataKey: string
+  memberName: string
+  color: string
+}
+
+function buildAggregateLineEndLabelEntries(
+  members: Array<{ memberId: string; memberName: string }>,
+  dataKeyPrefix: string,
+  memberColorMap: Map<string, string>,
+  chaseMemberId?: string | null,
+): AggregateLineEndLabelEntry[] {
+  return members.map((member) => ({
+    dataKey: `${dataKeyPrefix}${member.memberId}`,
+    memberName: member.memberName,
+    color: getMemberChartColor(member.memberId, memberColorMap, chaseMemberId),
+  }))
+}
+
+function createAggregateLineEndLabels(
+  labels: AggregateLineEndLabelEntry[],
+  realDataLength: number,
+) {
+  const labelByDataKey = new Map(labels.map((label) => [label.dataKey, label]))
+
+  return function AggregateLineEndLabels(props: {
+    offset?: { width?: number }
+    formattedGraphicalItems?: Array<{
+      props?: {
+        dataKey?: string | number
+        points?: Array<{ x?: number; y?: number; value?: number | null }>
+      }
+    }>
+  }) {
+    const items = props.formattedGraphicalItems ?? []
+    const chartWidth = props.offset?.width ?? 0
+    const lastIndex = realDataLength - 1
+    if (lastIndex < 0) return null
+
+    return (
+      <g className="aggregate-line-end-labels">
+        {items.map((entry, index) => {
+          const dataKey =
+            entry.props?.dataKey != null ? String(entry.props.dataKey) : ''
+          const label = labelByDataKey.get(dataKey)
+          const points = entry.props?.points ?? []
+          const lastPoint = points[lastIndex]
+          if (
+            !label ||
+            !lastPoint ||
+            lastPoint.value == null ||
+            lastPoint.x == null ||
+            lastPoint.y == null
+          ) {
+            return null
+          }
+
+          const pastCenter = chartWidth > 0 && lastPoint.x >= chartWidth / 2
+
+          return (
+            <text
+              key={`${dataKey}-${index}`}
+              x={pastCenter ? lastPoint.x - 6 : lastPoint.x + 6}
+              y={lastPoint.y}
+              fill={label.color}
+              fontSize={9}
+              textAnchor={pastCenter ? 'end' : 'start'}
+              dominantBaseline="middle"
+            >
+              {label.memberName}
+            </text>
+          )
+        })}
+      </g>
+    )
+  }
+}
 
 function TooltipMemberRow({
   color,
@@ -103,7 +229,7 @@ function TooltipMemberRow({
   return (
     <p
       className={cn(
-        'flex items-center gap-2 rounded-sm',
+        'flex items-center gap-1.5 rounded-sm',
         emphasized && 'font-semibold',
         isChaseTarget && 'bg-red-500/10 px-1 -mx-1',
       )}
@@ -118,13 +244,13 @@ function TooltipMemberRow({
       />
       <span
         className={cn(
-          'min-w-0 flex-1 truncate',
+          'max-w-[7rem] truncate',
           isChaseTarget ? 'font-semibold text-red-50' : 'text-zinc-200',
         )}
       >
         {name}
       </span>
-      <span className="shrink-0 tabular-nums" style={{ color }}>
+      <span className="shrink-0 tabular-nums whitespace-nowrap" style={{ color }}>
         {value}
       </span>
     </p>
@@ -173,11 +299,21 @@ function ChartTooltipShell({
   label,
   children,
   revealStatusOnOpen = false,
+  pinToTop = false,
+  active,
+  coordinate,
+  viewBox,
 }: {
   label?: string
   children: ReactNode
   revealStatusOnOpen?: boolean
+  pinToTop?: boolean
+  active?: boolean
+  coordinate?: Partial<{ x?: number; y?: number }>
+  viewBox?: Partial<{ width?: number; height?: number }>
 }) {
+  usePinTooltipToTop(pinToTop ? active : false, coordinate, viewBox)
+
   useEffect(() => {
     if (!revealStatusOnOpen) return
     const timer = window.setTimeout(scrollPortalStatusIntoView, 80)
@@ -185,7 +321,7 @@ function ChartTooltipShell({
   }, [revealStatusOnOpen, label])
 
   return (
-    <div className="pointer-events-auto max-w-[min(16rem,82vw)] rounded-md bg-zinc-950/96 px-2.5 py-2 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-sm">
+    <div className="pointer-events-auto w-max max-w-[min(14rem,82vw)] rounded-md bg-zinc-950/96 px-2 py-2 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-sm">
       {label ? <p className="mb-1.5 shrink-0 font-medium text-lime-200">{label}</p> : null}
       <div
         className={cn('space-y-1 text-zinc-300', SCROLLABLE_TOOLTIP_LIST_CLASS)}
@@ -230,6 +366,8 @@ function RankComparisonTooltip({
   active,
   payload,
   label,
+  coordinate,
+  viewBox,
   members,
   memberColorMap,
   isAggregate = false,
@@ -238,6 +376,8 @@ function RankComparisonTooltip({
   active?: boolean
   payload?: Array<{ name?: string; value?: number; color?: string }>
   label?: string
+  coordinate?: Partial<{ x?: number; y?: number }>
+  viewBox?: Partial<{ width?: number; height?: number }>
   members: LeagueRankComparisonChart['members']
   memberColorMap: Map<string, string>
   isAggregate?: boolean
@@ -259,7 +399,14 @@ function RankComparisonTooltip({
     .sort((a, b) => a.rank - b.rank)
 
   return (
-    <ChartTooltipShell label={label} revealStatusOnOpen={isAggregate}>
+    <ChartTooltipShell
+      label={label}
+      revealStatusOnOpen={isAggregate}
+      pinToTop
+      active={active}
+      coordinate={coordinate}
+      viewBox={viewBox}
+    >
       {rows.map((row) => {
         const isChaseTarget = isChaseTargetMember(row.memberId, chaseMemberId)
         const color = isAggregate
@@ -286,6 +433,8 @@ function MileageComparisonTooltip({
   active,
   payload,
   label,
+  coordinate,
+  viewBox,
   members,
   memberColorMap,
   chaseMemberId = null,
@@ -293,6 +442,8 @@ function MileageComparisonTooltip({
   active?: boolean
   payload?: Array<{ name?: string; value?: number; color?: string }>
   label?: string
+  coordinate?: Partial<{ x?: number; y?: number }>
+  viewBox?: Partial<{ width?: number; height?: number }>
   members: LeagueMileageComparisonChart['members']
   memberColorMap: Map<string, string>
   chaseMemberId?: string | null
@@ -312,7 +463,14 @@ function MileageComparisonTooltip({
     .sort((a, b) => b.km - a.km)
 
   return (
-    <ChartTooltipShell label={label} revealStatusOnOpen>
+    <ChartTooltipShell
+      label={label}
+      revealStatusOnOpen
+      pinToTop
+      active={active}
+      coordinate={coordinate}
+      viewBox={viewBox}
+    >
       {rows.map((row) => {
         const isChaseTarget = isChaseTargetMember(row.memberId, chaseMemberId)
         return (
@@ -333,6 +491,8 @@ function AttendanceComparisonTooltip({
   active,
   payload,
   label,
+  coordinate,
+  viewBox,
   members,
   memberColorMap,
   chaseMemberId = null,
@@ -340,6 +500,8 @@ function AttendanceComparisonTooltip({
   active?: boolean
   payload?: Array<{ name?: string; value?: number; color?: string }>
   label?: string
+  coordinate?: Partial<{ x?: number; y?: number }>
+  viewBox?: Partial<{ width?: number; height?: number }>
   members: LeagueAttendanceComparisonChart['members']
   memberColorMap: Map<string, string>
   chaseMemberId?: string | null
@@ -359,7 +521,14 @@ function AttendanceComparisonTooltip({
     .sort((a, b) => b.days - a.days)
 
   return (
-    <ChartTooltipShell label={label} revealStatusOnOpen>
+    <ChartTooltipShell
+      label={label}
+      revealStatusOnOpen
+      pinToTop
+      active={active}
+      coordinate={coordinate}
+      viewBox={viewBox}
+    >
       {rows.map((row) => (
         <TooltipMemberRow
           key={row.memberId}
@@ -376,12 +545,16 @@ function PbRecordComparisonTooltip({
   active,
   payload,
   label,
+  coordinate,
+  viewBox,
   members,
   memberColorMap,
 }: {
   active?: boolean
   payload?: Array<{ name?: string; value?: number }>
   label?: string
+  coordinate?: Partial<{ x?: number; y?: number }>
+  viewBox?: Partial<{ width?: number; height?: number }>
   members: LeaguePbRecordComparisonChart['members']
   memberColorMap: Map<string, string>
 }) {
@@ -400,7 +573,14 @@ function PbRecordComparisonTooltip({
     .sort((a, b) => a.seconds - b.seconds)
 
   return (
-    <ChartTooltipShell label={label} revealStatusOnOpen>
+    <ChartTooltipShell
+      label={label}
+      revealStatusOnOpen
+      pinToTop
+      active={active}
+      coordinate={coordinate}
+      viewBox={viewBox}
+    >
       {rows.map((row) => (
         <TooltipMemberRow
           key={row.memberId}
@@ -1122,6 +1302,19 @@ function AttendanceAggregateTrendChart({
     () => buildMemberChartColorMap(chart.members.map((member) => member.memberId)),
     [chart.members],
   )
+  const lineEndLabels = useMemo(
+    () =>
+      createAggregateLineEndLabels(
+        buildAggregateLineEndLabelEntries(
+          chart.members,
+          'days_',
+          memberColorMap,
+          chaseMemberId,
+        ),
+        chart.rows.length,
+      ),
+    [chart.members, chart.rows.length, chaseMemberId, memberColorMap],
+  )
 
   return (
     <div className={chartShellClass}>
@@ -1129,15 +1322,9 @@ function AttendanceAggregateTrendChart({
         <p className="mb-2 text-xs font-medium text-lime-300">전체 회원 출석 추이</p>
       ) : null}
       <ChartContainer config={attendanceChartConfig} className={chartAxisClass}>
-        <LineChart data={chart.rows} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
+        <LineChart data={chart.rows} margin={aggregateComparisonChartMargin(compact)}>
           <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
-          <XAxis
-            dataKey="label"
-            tickLine={false}
-            axisLine={false}
-            interval="preserveStartEnd"
-            minTickGap={24}
-          />
+          <XAxis {...AGGREGATE_COMPARISON_X_AXIS_PROPS} />
           <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} tickFormatter={(v) => `${v}일`} />
           <Tooltip
             {...SCROLLABLE_CHART_TOOLTIP_PROPS}
@@ -1166,6 +1353,7 @@ function AttendanceAggregateTrendChart({
               isAnimationActive={false}
             />
           ))}
+          <Customized component={lineEndLabels} />
         </LineChart>
       </ChartContainer>
       {!compact ? (
@@ -1205,6 +1393,19 @@ function RankTrendChart({
     () => buildMemberChartColorMap(comparisonMembers.map((member) => member.memberId)),
     [comparisonMembers],
   )
+  const aggregateLineEndLabels = useMemo(
+    () =>
+      createAggregateLineEndLabels(
+        buildAggregateLineEndLabelEntries(
+          comparisonMembers,
+          'rank_',
+          memberColorMap,
+          chaseMemberId,
+        ),
+        comparisonRows.length,
+      ),
+    [comparisonMembers, comparisonRows.length, chaseMemberId, memberColorMap],
+  )
 
   if (!hasComparison && rankData.length === 0) {
     return <GraphEmptyState />
@@ -1230,14 +1431,15 @@ function RankTrendChart({
 
       {hasComparison ? (
         <ChartContainer config={rankChartConfig} className={chartAxisClass}>
-          <LineChart data={comparisonRows} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
+          <LineChart
+            data={comparisonRows}
+            margin={
+              isAggregate ? aggregateComparisonChartMargin(compact) : { left: 4, right: 8, top: 8, bottom: 0 }
+            }
+          >
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
             <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              interval="preserveStartEnd"
-              minTickGap={24}
+              {...AGGREGATE_COMPARISON_X_AXIS_PROPS}
             />
             <YAxis tickLine={false} axisLine={false} width={28} reversed allowDecimals={false} />
             <Tooltip
@@ -1316,6 +1518,7 @@ function RankTrendChart({
                   ) : null}
                 </>
               )}
+            {isAggregate ? <Customized component={aggregateLineEndLabels} /> : null}
           </LineChart>
         </ChartContainer>
       ) : (
@@ -1368,6 +1571,14 @@ function PbRecordAggregateTrendChart({
     () => buildMemberChartColorMap(chart.members.map((member) => member.memberId)),
     [chart.members],
   )
+  const lineEndLabels = useMemo(
+    () =>
+      createAggregateLineEndLabels(
+        buildAggregateLineEndLabelEntries(chart.members, 'time_', memberColorMap),
+        chart.rows.length,
+      ),
+    [chart.members, chart.rows.length, memberColorMap],
+  )
 
   return (
     <div className={chartShellClass}>
@@ -1375,15 +1586,9 @@ function PbRecordAggregateTrendChart({
         {compact ? '기록 추이' : '전체 회원 PB 기록 추이'}
       </p>
       <ChartContainer config={timeChartConfig} className={chartAxisClass}>
-        <LineChart data={chart.rows} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
+        <LineChart data={chart.rows} margin={aggregateComparisonChartMargin(compact)}>
           <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
-          <XAxis
-            dataKey="label"
-            tickLine={false}
-            axisLine={false}
-            interval="preserveStartEnd"
-            minTickGap={24}
-          />
+          <XAxis {...AGGREGATE_COMPARISON_X_AXIS_PROPS} />
           <YAxis
             tickLine={false}
             axisLine={false}
@@ -1410,6 +1615,7 @@ function PbRecordAggregateTrendChart({
               isAnimationActive={false}
             />
           ))}
+          <Customized component={lineEndLabels} />
         </LineChart>
       </ChartContainer>
       {!compact ? (
@@ -1438,6 +1644,19 @@ function MileageAggregateTrendChart({
     () => buildMemberChartColorMap(chart.members.map((member) => member.memberId)),
     [chart.members],
   )
+  const lineEndLabels = useMemo(
+    () =>
+      createAggregateLineEndLabels(
+        buildAggregateLineEndLabelEntries(
+          chart.members,
+          'km_',
+          memberColorMap,
+          chaseMemberId,
+        ),
+        chart.rows.length,
+      ),
+    [chart.members, chart.rows.length, chaseMemberId, memberColorMap],
+  )
 
   return (
     <div className={chartShellClass}>
@@ -1445,15 +1664,9 @@ function MileageAggregateTrendChart({
         <p className="mb-2 text-xs font-medium text-lime-300">전체 회원 누적 마일리지</p>
       ) : null}
       <ChartContainer config={mileageChartConfig} className={chartAxisClass}>
-        <LineChart data={chart.rows} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
+        <LineChart data={chart.rows} margin={aggregateComparisonChartMargin(compact)}>
           <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
-          <XAxis
-            dataKey="label"
-            tickLine={false}
-            axisLine={false}
-            interval="preserveStartEnd"
-            minTickGap={24}
-          />
+          <XAxis {...AGGREGATE_COMPARISON_X_AXIS_PROPS} />
           <YAxis tickLine={false} axisLine={false} width={44} tickFormatter={(v) => `${v}km`} />
           <Tooltip
             {...SCROLLABLE_CHART_TOOLTIP_PROPS}
@@ -1482,6 +1695,7 @@ function MileageAggregateTrendChart({
               isAnimationActive={false}
             />
           ))}
+          <Customized component={lineEndLabels} />
         </LineChart>
       </ChartContainer>
       {!compact ? (

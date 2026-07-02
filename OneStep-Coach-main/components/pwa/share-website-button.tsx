@@ -12,13 +12,6 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { getShareLoginUrl } from '@/lib/site-brand'
 
-type ShareWebsiteButtonProps = {
-  className?: string
-  variant?: React.ComponentProps<typeof Button>['variant']
-  size?: React.ComponentProps<typeof Button>['size']
-  showLabel?: boolean
-}
-
 async function copyLoginUrl(url: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(url)
@@ -42,6 +35,31 @@ async function copyLoginUrl(url: string): Promise<boolean> {
   }
 }
 
+export async function shareLoginUrl(): Promise<'copied' | 'shared' | 'failed'> {
+  const url = getShareLoginUrl()
+
+  const copied = await copyLoginUrl(url)
+  if (copied) return 'copied'
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ url })
+      return 'shared'
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') return 'failed'
+    }
+  }
+
+  return 'failed'
+}
+
+type ShareWebsiteButtonProps = {
+  className?: string
+  variant?: React.ComponentProps<typeof Button>['variant']
+  size?: React.ComponentProps<typeof Button>['size']
+  showLabel?: boolean
+}
+
 export function ShareWebsiteButton({
   className,
   variant = 'outline',
@@ -49,23 +67,12 @@ export function ShareWebsiteButton({
   showLabel = false,
 }: ShareWebsiteButtonProps) {
   async function handleShare() {
-    const url = getShareLoginUrl()
-
-    const copied = await copyLoginUrl(url)
-    if (copied) {
+    const result = await shareLoginUrl()
+    if (result === 'copied') {
       toast.success('로그인 주소가 복사되었습니다.')
       return
     }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ url })
-        return
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') return
-      }
-    }
-
+    if (result === 'shared') return
     toast.error('링크 복사에 실패했습니다.')
   }
 

@@ -16,7 +16,12 @@ import type {
   RunningLeagueMileageLog,
   RunningLeagueParticipant,
 } from '@/lib/types'
+import {
+  resolveChaseTargetMileageKm,
+  resolveChaseTargetName,
+} from '@/lib/running-league/chase-leaderboard'
 import type { RankingView } from '@/lib/running-league/ranking-view'
+import { DEFAULT_PORTAL_CHASE_LABEL } from '@/lib/running-league/portal-chase-label'
 
 export type LeagueDailyHighlightKind =
   | 'daily_star'
@@ -24,6 +29,14 @@ export type LeagueDailyHighlightKind =
   | 'leader_streak'
   | 'league_pulse'
   | 'runner_up'
+  | 'next_rank_hunt'
+  | 'top_five_push'
+  | 'logging_streak'
+  | 'comeback_runner'
+  | 'quiet_climber'
+  | 'chase_pursuit'
+  | 'chase_beater'
+  | 'chase_pulse'
 
 export type LeagueDailyHighlight = {
   id: string
@@ -44,6 +57,13 @@ export type LeagueDailyHighlightsSnapshot = {
 }
 
 type HighlightView = Extract<RankingView, 'mileage' | 'attendance' | 'chase'>
+
+const MID_TIER_MIN_RANK = 4
+const TOP_FIVE_RANK = 5
+const COMEBACK_MIN_GAP_DAYS = 3
+const MIN_LOGGING_STREAK = 2
+const QUIET_CLIMBER_MIN_START_RANK = 5
+const QUIET_CLIMBER_MAX_DELTA = 4
 
 function formatShortDate(value: string): string {
   try {
@@ -538,6 +558,663 @@ function buildRunnerUpHighlight(input: {
   }
 }
 
+function computeLoggingStreakEndingOn(
+  memberId: string,
+  logs: ReadonlyArray<RunningLeagueMileageLog>,
+  spotlightDate: string,
+  periodStart: string,
+): number {
+  let streak = 0
+  let cursor = parseISO(spotlightDate)
+
+  while (true) {
+    const dateKey = format(cursor, 'yyyy-MM-dd')
+    if (dateKey < periodStart) break
+    if (!memberLoggedOnDate(memberId, logs, dateKey)) break
+    streak += 1
+    cursor = subDays(cursor, 1)
+  }
+
+  return streak
+}
+
+function resolveComebackGapDays(
+  memberId: string,
+  logs: ReadonlyArray<RunningLeagueMileageLog>,
+  spotlightDate: string,
+  periodStart: string,
+): number | null {
+  if (!memberLoggedOnDate(memberId, logs, spotlightDate)) return null
+
+  const memberDates = collectActivityDates(
+    logs.filter((log) => log.member_id === memberId),
+    periodStart,
+    spotlightDate,
+  ).filter((date) => date < spotlightDate)
+
+  if (memberDates.length === 0) return null
+
+  const previousDate = memberDates.at(-1)!
+  const gapDays = Math.round(
+    (parseISO(spotlightDate).getTime() - parseISO(previousDate).getTime()) / 86_400_000,
+  )
+  return gapDays >= COMEBACK_MIN_GAP_DAYS ? gapDays : null
+}
+
+function buildNextRankHuntHighlight(input: {
+  rankingView: HighlightView
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  periodStart: string
+  periodEnd: string
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const rankLabel = resolveRankLabel(input.rankingView)
+  const dateLabel = formatShortDate(input.spotlightDate)
+
+  if (input.rankingView === 'attendance') {
+    const board = buildAttendanceLeaderboard(
+      input.participants,
+      logsUpToDate(input.logs, input.spotlightDate),
+      input.periodStart,
+      input.periodEnd,
+    )
+    let best: {
+      memberId: string
+      memberName: string
+      rank: number
+      gapDays: number
+      aboveRank: number
+    } | null = null
+
+    for (let index = MID_TIER_MIN_RANK - 1; index < board.ranked.length; index += 1) {
+      const row = board.ranked[index]
+      const above = board.ranked[index - 1]
+      if (!above) continue
+      const gapDays = above.attendanceDays - row.attendanceDays
+      if (gapDays <= 0) continue
+      if (!best || gapDays < best.gapDays) {
+        best = {
+          memberId: row.memberId,
+          memberName: row.memberName,
+          rank: row.rank,
+          gapDays,
+          aboveRank: above.rank,
+        }
+      }
+    }
+
+    if (!best) return null
+
+    return {
+      id: `next-rank-hunt-${best.memberId}`,
+      kind: 'next_rank_hunt',
+      categoryLabel: '한 칸 위 추격',
+      memberId: best.memberId,
+      memberName: best.memberName,
+      headline: `${best.gapDays}일 차이`,
+      detail: `${best.rank}위 → ${best.aboveRank}위 · ${dateLabel}`,
+      description: `${best.memberName} 회원이 출석 ${best.rank}위입니다. 바로 위 ${best.aboveRank}위와 ${best.gapDays}일 차이로 추격 중입니다.`,
+      spotlightDate: input.spotlightDate,
+    }
+  }
+
+  const board = buildMileageDistanceLeaderboard(
+    input.participants,
+    logsUpToDate(input.logs, input.spotlightDate),
+    input.mileageRecognition,
+  )
+
+  let best: {
+    memberId: string
+    memberName: string
+    rank: number
+    gapKm: number
+    aboveRank: number
+  } | null = null
+
+  for (let index = MID_TIER_MIN_RANK - 1; index < board.ranked.length; index += 1) {
+    const row = board.ranked[index]
+    const above = board.ranked[index - 1]
+    if (!above) continue
+    const gapKm = Math.round((above.mileageKm - row.mileageKm) * 10) / 10
+    if (gapKm <= 0) continue
+    if (!best || gapKm < best.gapKm) {
+      best = {
+        memberId: row.memberId,
+        memberName: row.memberName,
+        rank: row.rank,
+        gapKm,
+        aboveRank: above.rank,
+      }
+    }
+  }
+
+  if (!best) return null
+
+  const chaseNote =
+    input.rankingView === 'chase'
+      ? ' 이겨라 챌린지에서도 한 단계 올라갈 기회입니다.'
+      : ''
+
+  return {
+    id: `next-rank-hunt-${best.memberId}`,
+    kind: 'next_rank_hunt',
+    categoryLabel: '한 칸 위 추격',
+    memberId: best.memberId,
+    memberName: best.memberName,
+    headline: `${formatMileageKmDisplay(best.gapKm)} 차이`,
+    detail: `${best.rank}위 → ${best.aboveRank}위 · ${dateLabel}`,
+    description: `${best.memberName} 회원이 ${rankLabel} ${best.rank}위입니다. 바로 위 ${best.aboveRank}위와 ${formatMileageKmDisplay(best.gapKm)} 차이로 추격 중입니다.${chaseNote}`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function buildTopFivePushHighlight(input: {
+  rankingView: HighlightView
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  periodStart: string
+  periodEnd: string
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const rankLabel = resolveRankLabel(input.rankingView)
+  const dateLabel = formatShortDate(input.spotlightDate)
+
+  if (input.rankingView === 'attendance') {
+    const board = buildAttendanceLeaderboard(
+      input.participants,
+      logsUpToDate(input.logs, input.spotlightDate),
+      input.periodStart,
+      input.periodEnd,
+    )
+    const cutoff = board.ranked[TOP_FIVE_RANK - 1]
+    if (!cutoff) return null
+
+    let best: {
+      memberId: string
+      memberName: string
+      rank: number
+      gapDays: number
+    } | null = null
+
+    for (const row of board.ranked) {
+      if (row.rank <= TOP_FIVE_RANK) continue
+      const gapDays = cutoff.attendanceDays - row.attendanceDays
+      if (gapDays <= 0) continue
+      if (!best || gapDays < best.gapDays) {
+        best = {
+          memberId: row.memberId,
+          memberName: row.memberName,
+          rank: row.rank,
+          gapDays,
+        }
+      }
+    }
+
+    if (!best) return null
+
+    return {
+      id: `top-five-push-${best.memberId}`,
+      kind: 'top_five_push',
+      categoryLabel: 'TOP5 도전',
+      memberId: best.memberId,
+      memberName: best.memberName,
+      headline: `${best.gapDays}일 더 필요`,
+      detail: `현재 ${best.rank}위 · ${dateLabel}`,
+      description: `${best.memberName} 회원이 출석 ${best.rank}위입니다. TOP ${TOP_FIVE_RANK} 진입까지 ${best.gapDays}일이 더 필요합니다.`,
+      spotlightDate: input.spotlightDate,
+    }
+  }
+
+  const board = buildMileageDistanceLeaderboard(
+    input.participants,
+    logsUpToDate(input.logs, input.spotlightDate),
+    input.mileageRecognition,
+  )
+  const cutoff = board.ranked[TOP_FIVE_RANK - 1]
+  if (!cutoff) return null
+
+  let best: {
+    memberId: string
+    memberName: string
+    rank: number
+    gapKm: number
+  } | null = null
+
+  for (const row of board.ranked) {
+    if (row.rank <= TOP_FIVE_RANK) continue
+    const gapKm = Math.round((cutoff.mileageKm - row.mileageKm) * 10) / 10
+    if (gapKm <= 0) continue
+    if (!best || gapKm < best.gapKm) {
+      best = {
+        memberId: row.memberId,
+        memberName: row.memberName,
+        rank: row.rank,
+        gapKm,
+      }
+    }
+  }
+
+  if (!best) return null
+
+  const chaseNote =
+    input.rankingView === 'chase'
+      ? ' 술래를 넘어서는 중위권 주자입니다.'
+      : ''
+
+  return {
+    id: `top-five-push-${best.memberId}`,
+    kind: 'top_five_push',
+    categoryLabel: 'TOP5 도전',
+    memberId: best.memberId,
+    memberName: best.memberName,
+    headline: `${formatMileageKmDisplay(best.gapKm)} 더 필요`,
+    detail: `현재 ${best.rank}위 · ${dateLabel}`,
+    description: `${best.memberName} 회원이 ${rankLabel} ${best.rank}위입니다. TOP ${TOP_FIVE_RANK} 진입까지 ${formatMileageKmDisplay(best.gapKm)}가 더 필요합니다.${chaseNote}`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function buildLoggingStreakHighlight(input: {
+  rankingView: HighlightView
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  periodStart: string
+  periodEnd: string
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const rankLabel = resolveRankLabel(input.rankingView)
+  const dateLabel = formatShortDate(input.spotlightDate)
+
+  let best: {
+    memberId: string
+    memberName: string
+    streak: number
+    rank: number | null
+  } | null = null
+
+  for (const participant of input.participants) {
+    const memberId = participant.member_id
+    const streak = computeLoggingStreakEndingOn(
+      memberId,
+      input.logs,
+      input.spotlightDate,
+      input.periodStart,
+    )
+    if (streak < MIN_LOGGING_STREAK) continue
+
+    const rank = resolveRankAtDate({
+      rankingView: input.rankingView,
+      memberId,
+      participants: input.participants,
+      logs: input.logs,
+      asOfDate: input.spotlightDate,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+      mileageRecognition: input.mileageRecognition,
+    })
+    if (rank == null || rank < MID_TIER_MIN_RANK) continue
+
+    const memberName = resolveParticipantName(participant)
+    if (
+      !best ||
+      streak > best.streak ||
+      (streak === best.streak && (rank ?? 999) < (best.rank ?? 999))
+    ) {
+      best = { memberId, memberName, streak, rank }
+    }
+  }
+
+  if (!best) return null
+
+  return {
+    id: `logging-streak-${best.memberId}`,
+    kind: 'logging_streak',
+    categoryLabel: '연속 기록',
+    memberId: best.memberId,
+    memberName: best.memberName,
+    headline: `${best.streak}일 연속`,
+    detail: `${rankLabel} ${best.rank}위 · ${dateLabel}`,
+    description: `${best.memberName} 회원이 ${best.streak}일 연속 기록을 이어가고 있습니다. 중위권이지만 꾸준한 페이스가 눈에 띕니다.`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function buildComebackRunnerHighlight(input: {
+  rankingView: HighlightView
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  periodStart: string
+  periodEnd: string
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const rankLabel = resolveRankLabel(input.rankingView)
+  const dateLabel = formatShortDate(input.spotlightDate)
+
+  let best: {
+    memberId: string
+    memberName: string
+    gapDays: number
+    rank: number | null
+  } | null = null
+
+  for (const participant of input.participants) {
+    const memberId = participant.member_id
+    const gapDays = resolveComebackGapDays(
+      memberId,
+      input.logs,
+      input.spotlightDate,
+      input.periodStart,
+    )
+    if (gapDays == null) continue
+
+    const rank = resolveRankAtDate({
+      rankingView: input.rankingView,
+      memberId,
+      participants: input.participants,
+      logs: input.logs,
+      asOfDate: input.spotlightDate,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+      mileageRecognition: input.mileageRecognition,
+    })
+    if (rank != null && rank < MID_TIER_MIN_RANK) continue
+
+    const memberName = resolveParticipantName(participant)
+    if (
+      !best ||
+      gapDays > best.gapDays ||
+      (gapDays === best.gapDays && (rank ?? 999) > (best.rank ?? 0))
+    ) {
+      best = { memberId, memberName, gapDays, rank }
+    }
+  }
+
+  if (!best) return null
+
+  return {
+    id: `comeback-runner-${best.memberId}`,
+    kind: 'comeback_runner',
+    categoryLabel: '복귀 러너',
+    memberId: best.memberId,
+    memberName: best.memberName,
+    headline: `${best.gapDays}일 만에 복귀`,
+    detail: `${rankLabel} ${best.rank ?? '-'}위 · ${dateLabel}`,
+    description: `${best.memberName} 회원이 ${best.gapDays}일 만에 다시 기록을 남겼습니다. 하위권·중위권에서도 다시 뛰어올 기회가 열렸습니다.`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function buildQuietClimberHighlight(input: {
+  rankingView: HighlightView
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  periodStart: string
+  periodEnd: string
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const previousDateKey = format(subDays(parseISO(input.spotlightDate), 1), 'yyyy-MM-dd')
+  if (previousDateKey < input.periodStart) return null
+
+  const rankLabel = resolveRankLabel(input.rankingView)
+  const dateLabel = formatShortDate(input.spotlightDate)
+
+  let best: {
+    memberId: string
+    memberName: string
+    delta: number
+    before: number
+    after: number
+  } | null = null
+
+  for (const participant of input.participants) {
+    const memberId = participant.member_id
+    const before = resolveRankAtDate({
+      rankingView: input.rankingView,
+      memberId,
+      participants: input.participants,
+      logs: input.logs,
+      asOfDate: previousDateKey,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+      mileageRecognition: input.mileageRecognition,
+    })
+    const after = resolveRankAtDate({
+      rankingView: input.rankingView,
+      memberId,
+      participants: input.participants,
+      logs: input.logs,
+      asOfDate: input.spotlightDate,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+      mileageRecognition: input.mileageRecognition,
+    })
+    if (before == null || after == null || before <= after) continue
+    if (before < QUIET_CLIMBER_MIN_START_RANK) continue
+
+    const delta = before - after
+    if (delta > QUIET_CLIMBER_MAX_DELTA) continue
+
+    const memberName = resolveParticipantName(participant)
+    if (!best || delta > best.delta || (delta === best.delta && after > best.after)) {
+      best = { memberId, memberName, delta, before, after }
+    }
+  }
+
+  if (!best) return null
+
+  return {
+    id: `quiet-climber-${best.memberId}`,
+    kind: 'quiet_climber',
+    categoryLabel: '중위권 상승',
+    memberId: best.memberId,
+    memberName: best.memberName,
+    headline: `↑ ${best.delta}`,
+    detail: `${best.before}위 → ${best.after}위 · ${dateLabel}`,
+    description: `${best.memberName} 회원이 ${rankLabel} 랭킹에서 ${best.before}위에서 ${best.after}위로 ${best.delta}계단 올랐습니다. 상위권은 아니지만 중후위 그룹의 움직임이 포착됐습니다.`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function resolveChaseLabel(chaseLabel?: string | null): string {
+  const trimmed = chaseLabel?.trim()
+  return trimmed || DEFAULT_PORTAL_CHASE_LABEL
+}
+
+function buildChasePursuitHighlight(input: {
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  chaseMemberId: string
+  chaseLabel?: string | null
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const board = buildMileageDistanceLeaderboard(
+    input.participants,
+    logsUpToDate(input.logs, input.spotlightDate),
+    input.mileageRecognition,
+  )
+  const chaseKm = resolveChaseTargetMileageKm(board, input.chaseMemberId, input.participants)
+  if (chaseKm == null) return null
+
+  const chaseName = resolveChaseTargetName(input.participants, input.chaseMemberId) ?? '술래'
+  const chaseLabel = resolveChaseLabel(input.chaseLabel)
+  const dateLabel = formatShortDate(input.spotlightDate)
+
+  let best: {
+    memberId: string
+    memberName: string
+    gapKm: number
+    rank: number
+  } | null = null
+
+  for (const row of board.ranked) {
+    if (row.memberId === input.chaseMemberId) continue
+    if (row.mileageKm >= chaseKm) continue
+
+    const gapKm = Math.round((chaseKm - row.mileageKm) * 10) / 10
+    if (gapKm <= 0) continue
+
+    if (!best || gapKm < best.gapKm || (gapKm === best.gapKm && row.rank < best.rank)) {
+      best = {
+        memberId: row.memberId,
+        memberName: row.memberName,
+        gapKm,
+        rank: row.rank,
+      }
+    }
+  }
+
+  if (!best) return null
+
+  return {
+    id: `chase-pursuit-${best.memberId}`,
+    kind: 'chase_pursuit',
+    categoryLabel: '술래 추격',
+    memberId: best.memberId,
+    memberName: best.memberName,
+    headline: `${formatMileageKmDisplay(best.gapKm)} 남음`,
+    detail: `마일리지 ${best.rank}위 · ${dateLabel}`,
+    description: `${best.memberName} 회원이 ${chaseName}(${formatMileageKmDisplay(chaseKm)})를 향해 가장 가깝게 추격 중입니다. ${formatMileageKmDisplay(best.gapKm)}만 더 달리면 ${chaseLabel}에서 술래를 넘길 수 있습니다.`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function buildChaseBeaterHighlight(input: {
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  chaseMemberId: string
+  chaseLabel?: string | null
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const board = buildMileageDistanceLeaderboard(
+    input.participants,
+    logsUpToDate(input.logs, input.spotlightDate),
+    input.mileageRecognition,
+  )
+  const chaseKm = resolveChaseTargetMileageKm(board, input.chaseMemberId, input.participants)
+  if (chaseKm == null) return null
+
+  const chaseName = resolveChaseTargetName(input.participants, input.chaseMemberId) ?? '술래'
+  const chaseLabel = resolveChaseLabel(input.chaseLabel)
+  const dateLabel = formatShortDate(input.spotlightDate)
+
+  let best: {
+    memberId: string
+    memberName: string
+    leadKm: number
+    rank: number
+  } | null = null
+
+  for (const row of board.ranked) {
+    if (row.memberId === input.chaseMemberId) continue
+    if (row.mileageKm <= chaseKm) continue
+
+    const leadKm = Math.round((row.mileageKm - chaseKm) * 10) / 10
+    if (leadKm <= 0) continue
+
+    if (!best || leadKm > best.leadKm || (leadKm === best.leadKm && row.rank < best.rank)) {
+      best = {
+        memberId: row.memberId,
+        memberName: row.memberName,
+        leadKm,
+        rank: row.rank,
+      }
+    }
+  }
+
+  if (!best) return null
+
+  return {
+    id: `chase-beater-${best.memberId}`,
+    kind: 'chase_beater',
+    categoryLabel: '술래 넘김',
+    memberId: best.memberId,
+    memberName: best.memberName,
+    headline: `${formatMileageKmDisplay(best.leadKm)} 앞섬`,
+    detail: `마일리지 ${best.rank}위 · ${dateLabel}`,
+    description: `${best.memberName} 회원이 ${chaseName}(${formatMileageKmDisplay(chaseKm)})를 ${formatMileageKmDisplay(best.leadKm)} 앞서고 있습니다. ${chaseLabel}에서 가장 앞선 주자입니다.`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function buildChasePulseHighlight(input: {
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  chaseMemberId: string
+  chaseLabel?: string | null
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight | null {
+  const board = buildMileageDistanceLeaderboard(
+    input.participants,
+    logsUpToDate(input.logs, input.spotlightDate),
+    input.mileageRecognition,
+  )
+  const chaseKm = resolveChaseTargetMileageKm(board, input.chaseMemberId, input.participants)
+  if (chaseKm == null) return null
+
+  const chaseName = resolveChaseTargetName(input.participants, input.chaseMemberId) ?? '술래'
+  const chaseLabel = resolveChaseLabel(input.chaseLabel)
+  const dateLabel = formatShortDate(input.spotlightDate)
+  const beaters = board.ranked.filter(
+    (row) => row.memberId !== input.chaseMemberId && row.mileageKm > chaseKm,
+  )
+
+  return {
+    id: `chase-pulse-${input.spotlightDate}`,
+    kind: 'chase_pulse',
+    categoryLabel: '이겨라 현황',
+    memberId: input.chaseMemberId,
+    memberName: chaseName,
+    headline: beaters.length > 0 ? `${beaters.length}명이 추월` : '아직 추월자 없음',
+    detail: `${formatMileageKmDisplay(chaseKm)} · ${dateLabel}`,
+    description:
+      beaters.length > 0
+        ? `${dateLabel} 기준 ${chaseName}(${formatMileageKmDisplay(chaseKm)})를 넘긴 회원이 ${beaters.length}명입니다. ${chaseLabel} 판도를 확인해 보세요.`
+        : `${dateLabel} 기준 아직 ${chaseName}(${formatMileageKmDisplay(chaseKm)})를 넘긴 회원은 없습니다. 누가 먼저 ${chaseLabel}에 성공할지 주목해 보세요.`,
+    spotlightDate: input.spotlightDate,
+  }
+}
+
+function buildChaseHighlights(input: {
+  participants: ReadonlyArray<RunningLeagueParticipant>
+  logs: ReadonlyArray<RunningLeagueMileageLog>
+  spotlightDate: string
+  chaseMemberId?: string | null
+  chaseLabel?: string | null
+  mileageRecognition?: MileageRecognition | null
+}): LeagueDailyHighlight[] {
+  const chaseMemberId = input.chaseMemberId?.trim()
+  if (!chaseMemberId) return []
+
+  const shared = {
+    participants: input.participants,
+    logs: input.logs,
+    spotlightDate: input.spotlightDate,
+    chaseMemberId,
+    chaseLabel: input.chaseLabel,
+    mileageRecognition: input.mileageRecognition,
+  }
+
+  const pursuit = buildChasePursuitHighlight(shared)
+  const beater = buildChaseBeaterHighlight(shared)
+  const pulse = buildChasePulseHighlight(shared)
+
+  const highlights: LeagueDailyHighlight[] = []
+  if (pursuit) highlights.push(pursuit)
+  if (beater) highlights.push(beater)
+  else if (pulse) highlights.push(pulse)
+  return highlights
+}
+
 export function buildLeagueDailyHighlights(input: {
   rankingView: HighlightView
   participants: ReadonlyArray<RunningLeagueParticipant>
@@ -547,6 +1224,8 @@ export function buildLeagueDailyHighlights(input: {
   today?: string
   limit?: number
   mileageRecognition?: MileageRecognition | null
+  chaseMemberId?: string | null
+  chaseLabel?: string | null
 }): LeagueDailyHighlightsSnapshot {
   const today = input.today ?? format(new Date(), 'yyyy-MM-dd')
   const spotlightDate = resolveSpotlightDate(
@@ -577,11 +1256,24 @@ export function buildLeagueDailyHighlights(input: {
       mileageRecognition: input.mileageRecognition,
     }),
     buildRunnerUpHighlight(shared),
+    buildNextRankHuntHighlight(shared),
+    buildTopFivePushHighlight(shared),
+    buildLoggingStreakHighlight(shared),
+    buildComebackRunnerHighlight(shared),
+    buildQuietClimberHighlight(shared),
+    ...buildChaseHighlights({
+      participants: input.participants,
+      logs: input.mileageLogs,
+      spotlightDate,
+      chaseMemberId: input.chaseMemberId,
+      chaseLabel: input.chaseLabel,
+      mileageRecognition: input.mileageRecognition,
+    }),
   ].filter((item): item is LeagueDailyHighlight => item != null)
 
   return {
     spotlightDate,
     spotlightDateLabel: formatShortDate(spotlightDate),
-    highlights: candidates.slice(0, input.limit ?? 5),
+    highlights: candidates.slice(0, input.limit ?? 12),
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Crown, Sparkles, TrendingUp, Trophy, Users } from 'lucide-react'
+import { Crown, Crosshair, Flame, RotateCcw, Sparkles, Star, Target, TrendingUp, Trophy, Users, Zap } from 'lucide-react'
 import { formatRankingMemberName } from '@/lib/running-league/mask-member-name'
 import type { LeagueDailyHighlight } from '@/lib/running-league/league-daily-highlights'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,22 @@ function highlightIcon(kind: LeagueDailyHighlight['kind']) {
       return Users
     case 'runner_up':
       return Trophy
+    case 'next_rank_hunt':
+      return Target
+    case 'top_five_push':
+      return Star
+    case 'logging_streak':
+      return Flame
+    case 'comeback_runner':
+      return RotateCcw
+    case 'quiet_climber':
+      return TrendingUp
+    case 'chase_pursuit':
+      return Crosshair
+    case 'chase_beater':
+      return Zap
+    case 'chase_pulse':
+      return Target
     default:
       return Sparkles
   }
@@ -44,6 +60,22 @@ function highlightIconClass(kind: LeagueDailyHighlight['kind']) {
       return 'text-sky-300'
     case 'runner_up':
       return 'text-lime-300'
+    case 'next_rank_hunt':
+      return 'text-orange-300'
+    case 'top_five_push':
+      return 'text-violet-300'
+    case 'logging_streak':
+      return 'text-rose-300'
+    case 'comeback_runner':
+      return 'text-cyan-300'
+    case 'quiet_climber':
+      return 'text-teal-300'
+    case 'chase_pursuit':
+      return 'text-orange-400'
+    case 'chase_beater':
+      return 'text-red-400'
+    case 'chase_pulse':
+      return 'text-fuchsia-300'
     default:
       return 'text-lime-300'
   }
@@ -87,7 +119,13 @@ function DailyHighlightCard({
       <span
         className={cn(
           'truncate text-xs font-medium tabular-nums',
-          item.kind === 'rank_climber' ? 'text-emerald-400' : 'text-lime-200/90',
+          item.kind === 'rank_climber' || item.kind === 'quiet_climber'
+            ? 'text-emerald-400'
+            : item.kind === 'chase_beater'
+              ? 'text-red-300'
+              : item.kind === 'chase_pursuit'
+                ? 'text-orange-300'
+                : 'text-lime-200/90',
         )}
       >
         {item.memberName ? item.headline : item.detail}
@@ -140,7 +178,13 @@ function HighlightDetailDialog({
           <p
             className={cn(
               'text-base font-semibold tabular-nums',
-              item.kind === 'rank_climber' ? 'text-emerald-400' : 'text-lime-200',
+              item.kind === 'rank_climber' || item.kind === 'quiet_climber'
+                ? 'text-emerald-400'
+                : item.kind === 'chase_beater'
+                  ? 'text-red-300'
+                  : item.kind === 'chase_pursuit'
+                    ? 'text-orange-300'
+                    : 'text-lime-200',
             )}
           >
             {item.headline}
@@ -215,7 +259,7 @@ export function MemberLeagueMomentumStrip({
           </span>
         </p>
 
-        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5">
           {dailyHighlights.highlights.map((item) => (
             <DailyHighlightCard
               key={item.id}
