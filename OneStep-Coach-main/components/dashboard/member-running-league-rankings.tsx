@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { MemberMileageLogDialog } from '@/components/dashboard/member-mileage-log-dialog'
+import { MileageAnimalTierBadge } from '@/components/dashboard/mileage-animal-tier-badge'
 import { MemberRunningLeagueRankingsSkeleton } from '@/components/dashboard/member-running-league-rankings-skeleton'
 import { MemberRunningPbDialog } from '@/components/dashboard/member-running-pb-panel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,6 +30,10 @@ import {
   resolvePortalStatusMessageColor,
 } from '@/lib/running-league/portal-status-message'
 import { formatRankingMemberName } from '@/lib/running-league/mask-member-name'
+import {
+  buildMemberMileageKmMapFromLogs,
+  resolveMemberMileageKm,
+} from '@/lib/running-league/mileage-animal-tier'
 import {
   formatAttendanceDaysDisplay,
   type AttendanceLeaderboard,
@@ -792,6 +797,7 @@ function RankingMemberStatusMessage({
 
 function RankingMemberNameCell({
   memberName,
+  mileageKm = 0,
   isMe,
   isSelected,
   chaseBadgeLabel = null,
@@ -800,6 +806,7 @@ function RankingMemberNameCell({
   statusMessageColor = null,
 }: {
   memberName: string
+  mileageKm?: number
   isMe: boolean
   isSelected: boolean
   chaseBadgeLabel?: string | null
@@ -820,6 +827,7 @@ function RankingMemberNameCell({
         >
           {formatRankingMemberName(memberName, { isMe })}
         </span>
+        <MileageAnimalTierBadge mileageKm={mileageKm} />
         <RankingMemberStatusMessage
           message={statusMessage}
           color={statusMessageColor}
@@ -947,6 +955,7 @@ function RankingPreview({
   chaseLabel = null,
   chaseTargetKm = null,
   unfilteredMileageLeaderboard,
+  memberMileageKmById,
 }: {
   rankingView: RankingView
   pbDistance: PbLeaderboardDistance
@@ -969,6 +978,7 @@ function RankingPreview({
   chaseLabel?: string | null
   chaseTargetKm?: number | null
   unfilteredMileageLeaderboard: MileageDistanceLeaderboard
+  memberMileageKmById: ReadonlyMap<string, number>
 }) {
   const previewRows =
     rankingView === 'pb'
@@ -1131,12 +1141,14 @@ function RankingPreview({
                   chaseMemberId,
                   chaseLabel,
                 )
+                const mileageKm = resolveMemberMileageKm(row.memberId, memberMileageKmById)
                 if (rankingView === 'pb') {
                   return (
                     <PbRankingRow
                       key={row.participantId}
                       row={row as PbDistanceRankRow}
                       isMe={isMe}
+                      mileageKm={mileageKm}
                       distanceLabel={formatPbDistanceLabel(pbDistance)}
                       showDistanceLabel={false}
                       {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
@@ -1152,6 +1164,7 @@ function RankingPreview({
                       key={row.participantId}
                       row={row as AttendanceRankRow}
                       isMe={isMe}
+                      mileageKm={mileageKm}
                       {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
                       rankDelta={resolveRankDelta(row.memberId, row.rank)}
                       onMemberSelect={onMemberSelect}
@@ -1282,6 +1295,7 @@ function PbRankingRow({
   isMe,
   isPortalCoach = false,
   chaseBadgeLabel = null,
+  mileageKm = 0,
   distanceLabel,
   statusMessage = null,
   statusMessageColor = null,
@@ -1295,6 +1309,7 @@ function PbRankingRow({
   isMe: boolean
   isPortalCoach?: boolean
   chaseBadgeLabel?: string | null
+  mileageKm?: number
   distanceLabel: string
   statusMessage?: string | null
   statusMessageColor?: string | null
@@ -1324,6 +1339,7 @@ function PbRankingRow({
       <RankMedalDisplay rank={row.rank} />
       <RankingMemberNameCell
         memberName={row.memberName}
+        mileageKm={mileageKm}
         isMe={isMe}
         isSelected={isRowSelected}
         chaseBadgeLabel={chaseBadgeLabel}
@@ -1387,6 +1403,7 @@ function MileageRankingRow({
       <RankMedalDisplay rank={row.rank} />
       <RankingMemberNameCell
         memberName={row.memberName}
+        mileageKm={row.mileageKm}
         isMe={isMe}
         isSelected={isRowSelected}
         chaseBadgeLabel={chaseBadgeLabel}
@@ -1409,6 +1426,7 @@ function AttendanceRankingRow({
   isMe,
   isPortalCoach = false,
   chaseBadgeLabel = null,
+  mileageKm = 0,
   statusMessage = null,
   statusMessageColor = null,
   rankDelta = RANK_DELTA_SAME,
@@ -1420,6 +1438,7 @@ function AttendanceRankingRow({
   isMe: boolean
   isPortalCoach?: boolean
   chaseBadgeLabel?: string | null
+  mileageKm?: number
   statusMessage?: string | null
   statusMessageColor?: string | null
   rankDelta?: RankDelta
@@ -1447,6 +1466,7 @@ function AttendanceRankingRow({
       <RankMedalDisplay rank={row.rank} />
       <RankingMemberNameCell
         memberName={row.memberName}
+        mileageKm={mileageKm}
         isMe={isMe}
         isSelected={isRowSelected}
         chaseBadgeLabel={chaseBadgeLabel}
@@ -1474,6 +1494,7 @@ function PbRankingList({
   rankingBundle = null,
   genderFilter = 'all',
   showDistanceLabel = true,
+  memberMileageKmById,
 }: {
   leaderboard: PbDistanceLeaderboard
   highlightMemberId?: string | null
@@ -1484,6 +1505,7 @@ function PbRankingList({
   rankingBundle?: MemberRunningLeagueRankingBundle | null
   genderFilter?: RankingGenderFilter
   showDistanceLabel?: boolean
+  memberMileageKmById: ReadonlyMap<string, number>
 }) {
   const { ranked, unranked } = leaderboard
   const total = getLeaderboardTotal(leaderboard)
@@ -1558,6 +1580,7 @@ function PbRankingList({
               row={row}
               isMe={isMe}
               isPortalCoach={portalCoachMemberIds.has(row.memberId)}
+              mileageKm={resolveMemberMileageKm(row.memberId, memberMileageKmById)}
               distanceLabel={distanceLabel}
               {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
               rankDelta={rankDeltaMap.get(row.memberId) ?? RANK_DELTA_SAME}
@@ -1584,6 +1607,7 @@ function PbRankingList({
               >
                 <RankingMemberNameCell
                   memberName={row.memberName}
+                  mileageKm={resolveMemberMileageKm(row.memberId, memberMileageKmById)}
                   isMe={highlightMemberId != null && row.memberId === highlightMemberId}
                   isSelected={false}
                   isPortalCoach={isPortalCoach}
@@ -1617,6 +1641,7 @@ function MileageRankingList({
   chaseTargetKm = null,
   rankingBundle = null,
   genderFilter = 'all',
+  memberMileageKmById,
 }: {
   leaderboard: MileageDistanceLeaderboard
   highlightMemberId?: string | null
@@ -1630,6 +1655,7 @@ function MileageRankingList({
   chaseTargetKm?: number | null
   rankingBundle?: MemberRunningLeagueRankingBundle | null
   genderFilter?: RankingGenderFilter
+  memberMileageKmById: ReadonlyMap<string, number>
 }) {
   const { ranked, unranked } = leaderboard
   const total = getLeaderboardTotal(leaderboard)
@@ -1731,6 +1757,7 @@ function MileageRankingList({
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
                   <RankingMemberNameCell
                     memberName={row.memberName}
+                    mileageKm={resolveMemberMileageKm(row.memberId, memberMileageKmById)}
                     isMe={highlightMemberId != null && row.memberId === highlightMemberId}
                     isSelected={false}
                     chaseBadgeLabel={chaseBadgeLabel}
@@ -1762,6 +1789,7 @@ function AttendanceRankingList({
   portalCoachMemberIds = new Set<string>(),
   rankingBundle = null,
   genderFilter = 'all',
+  memberMileageKmById,
 }: {
   leaderboard: AttendanceLeaderboard
   highlightMemberId?: string | null
@@ -1771,6 +1799,7 @@ function AttendanceRankingList({
   portalCoachMemberIds?: ReadonlySet<string>
   rankingBundle?: MemberRunningLeagueRankingBundle | null
   genderFilter?: RankingGenderFilter
+  memberMileageKmById: ReadonlyMap<string, number>
 }) {
   const { ranked, unranked } = leaderboard
   const total = getLeaderboardTotal(leaderboard)
@@ -1842,6 +1871,7 @@ function AttendanceRankingList({
               row={row}
               isMe={isMe}
               isPortalCoach={portalCoachMemberIds.has(row.memberId)}
+              mileageKm={resolveMemberMileageKm(row.memberId, memberMileageKmById)}
               {...resolveStatusMessageProps(statusMessageMap, row.memberId)}
               rankDelta={rankDeltaMap.get(row.memberId) ?? RANK_DELTA_SAME}
               onMemberSelect={onMemberSelect}
@@ -1867,6 +1897,7 @@ function AttendanceRankingList({
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
                   <RankingMemberNameCell
                     memberName={row.memberName}
+                    mileageKm={resolveMemberMileageKm(row.memberId, memberMileageKmById)}
                     isMe={highlightMemberId != null && row.memberId === highlightMemberId}
                     isSelected={false}
                     isPortalCoach={isPortalCoach}
@@ -1892,12 +1923,14 @@ function ScoreRankingRow({
   row,
   isMe,
   isPortalCoach = false,
+  mileageKm = 0,
   onMemberSelect,
   isSelected,
 }: {
   row: RunningLeagueRankRow
   isMe: boolean
   isPortalCoach?: boolean
+  mileageKm?: number
   onMemberSelect?: (memberId: string, memberName: string) => void
   isSelected?: boolean
 }) {
@@ -1916,6 +1949,7 @@ function ScoreRankingRow({
       <RankMedalDisplay rank={row.rank} />
       <RankingMemberNameCell
         memberName={row.memberName}
+        mileageKm={mileageKm}
         isMe={isMe}
         isSelected={isRowSelected}
         isPortalCoach={isPortalCoach}
@@ -1935,12 +1969,14 @@ function ScoreRankingList({
   onMemberSelect,
   selectedMemberId,
   portalCoachMemberIds = new Set<string>(),
+  memberMileageKmById,
 }: {
   rows: RunningLeagueRankRow[]
   highlightMemberId?: string | null
   onMemberSelect?: (memberId: string, memberName: string) => void
   selectedMemberId?: string | null
   portalCoachMemberIds?: ReadonlySet<string>
+  memberMileageKmById: ReadonlyMap<string, number>
 }) {
   const total = rows.length
   const myRow = highlightMemberId
@@ -1978,6 +2014,7 @@ function ScoreRankingList({
               row={row}
               isMe={isMe}
               isPortalCoach={portalCoachMemberIds.has(row.memberId)}
+              mileageKm={resolveMemberMileageKm(row.memberId, memberMileageKmById)}
               onMemberSelect={onMemberSelect}
               isSelected={selectedMemberId === row.memberId}
             />
@@ -2052,6 +2089,7 @@ function FullRankingDialog({
   chaseMemberId = null,
   chaseLabel = null,
   chaseTargetKm = null,
+  memberMileageKmById,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -2074,6 +2112,7 @@ function FullRankingDialog({
   chaseMemberId?: string | null
   chaseLabel?: string | null
   chaseTargetKm?: number | null
+  memberMileageKmById: ReadonlyMap<string, number>
 }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
@@ -2270,6 +2309,7 @@ function FullRankingDialog({
               rankingBundle={rankingBundle}
               genderFilter={genderFilter}
               showDistanceLabel={false}
+              memberMileageKmById={memberMileageKmById}
             />
           ) : rankingView === 'attendance' ? (
             <AttendanceRankingList
@@ -2281,6 +2321,7 @@ function FullRankingDialog({
               portalCoachMemberIds={buildPortalCoachMemberIds(rankingBundle?.participants ?? [])}
               rankingBundle={rankingBundle}
               genderFilter={genderFilter}
+              memberMileageKmById={memberMileageKmById}
             />
           ) : (
             <MileageRankingList
@@ -2296,6 +2337,7 @@ function FullRankingDialog({
               chaseTargetKm={chaseTargetKm}
               rankingBundle={rankingBundle}
               genderFilter={genderFilter}
+              memberMileageKmById={memberMileageKmById}
             />
           )}
         </ScrollArea>
@@ -2488,6 +2530,15 @@ export function MemberRunningLeagueRankings({
     () => (rankingBundle ? countUnclassifiedParticipants(rankingBundle.participants) : 0),
     [rankingBundle],
   )
+
+  const memberMileageKmById = useMemo(() => {
+    if (!rankingBundle) return new Map<string, number>()
+    return buildMemberMileageKmMapFromLogs(
+      rankingBundle.participants,
+      rankingBundle.mileageLogs,
+      rankingBundle.mileageRecognition,
+    )
+  }, [rankingBundle])
 
   const panelMember = selectedMember
 
@@ -2689,6 +2740,7 @@ export function MemberRunningLeagueRankings({
         highlightMemberId={highlightMemberId}
         onMemberSelect={handleMemberSelect}
         rankingPeriodLabel={effectiveRankingPeriod.label}
+        memberMileageKmById={memberMileageKmById}
         className={MEMBER_PORTAL_CARD_CLASS}
       />
     ) : null
@@ -2733,6 +2785,7 @@ export function MemberRunningLeagueRankings({
           chaseLabel={chaseLabel}
           chaseTargetKm={chaseTargetMileageKm}
           unfilteredMileageLeaderboard={unfilteredMileageLeaderboard}
+          memberMileageKmById={memberMileageKmById}
         />
 
         <div ref={graphPanelRef} className="scroll-mt-4">
@@ -2775,6 +2828,7 @@ export function MemberRunningLeagueRankings({
         chaseMemberId={chaseMemberId}
         chaseLabel={chaseLabel}
         chaseTargetKm={chaseTargetMileageKm}
+        memberMileageKmById={memberMileageKmById}
       />
 
       <MemberRunningPbDialog

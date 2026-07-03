@@ -19,6 +19,8 @@ import {
 import { aggregateAttendanceDaysByMember } from '@/lib/running-league/attendance-leaderboard'
 import { buildMemberMileageRankHistorySeries } from '@/lib/running-league/mileage-rank-history'
 import { buildMemberChaseComparisonChart } from '@/lib/running-league/league-chase-comparison'
+import { buildMemberMileageKmMapFromLogs, resolveMemberMileageKm } from '@/lib/running-league/mileage-animal-tier'
+import { MileageAnimalTierBadge } from '@/components/dashboard/mileage-animal-tier-badge'
 import { formatRankingMemberName } from '@/lib/running-league/mask-member-name'
 import type { PbLeaderboardDistance } from '@/lib/running-league/pb-leaderboard'
 import { buildMemberRankingHistorySeries } from '@/lib/running-league/ranking-history'
@@ -61,10 +63,12 @@ interface MemberRankingDetailPanelProps {
 
 function MemberGraphSummaryHeader({
   summary,
+  mileageKm,
   isMe,
   isExplicitSelection,
 }: {
   summary: ReturnType<typeof buildMemberGraphPanelSummary>
+  mileageKm: number
   isMe: boolean
   isExplicitSelection: boolean
 }) {
@@ -78,10 +82,11 @@ function MemberGraphSummaryHeader({
       )}
     >
       <div className="space-y-1.5">
-        <p className="text-xl font-bold leading-tight text-lime-50">
-          {formatRankingMemberName(summary.displayName, { isMe })}
+        <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-xl font-bold leading-tight text-lime-50">
+          <span>{formatRankingMemberName(summary.displayName, { isMe })}</span>
+          <MileageAnimalTierBadge mileageKm={mileageKm} className="text-xs" />
           {isMe && !isExplicitSelection ? (
-            <span className="ml-2 text-sm font-medium text-lime-300/80">나</span>
+            <span className="text-sm font-medium text-lime-300/80">나</span>
           ) : null}
         </p>
         {summary.rankLine ? (
@@ -259,6 +264,16 @@ export function MemberRankingDetailPanel({
     ],
   )
 
+  const memberMileageKm = useMemo(() => {
+    if (!rankingBundle) return 0
+    const map = buildMemberMileageKmMapFromLogs(
+      rankingBundle.participants,
+      rankingBundle.mileageLogs,
+      rankingBundle.mileageRecognition,
+    )
+    return resolveMemberMileageKm(memberId, map)
+  }, [memberId, rankingBundle])
+
   return (
     <div
       className={cn(
@@ -327,6 +342,7 @@ export function MemberRankingDetailPanel({
         {!isMobile ? (
           <MemberGraphSummaryHeader
             summary={graphSummary}
+            mileageKm={memberMileageKm}
             isMe={isMe}
             isExplicitSelection={isExplicitSelection}
           />

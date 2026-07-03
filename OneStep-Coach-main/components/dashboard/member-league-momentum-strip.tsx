@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { Crown, Crosshair, Flame, RotateCcw, Sparkles, Star, Target, TrendingUp, Trophy, Users, Zap } from 'lucide-react'
 import { formatRankingMemberName } from '@/lib/running-league/mask-member-name'
+import { resolveMemberMileageKm } from '@/lib/running-league/mileage-animal-tier'
 import type { LeagueDailyHighlight } from '@/lib/running-league/league-daily-highlights'
+import { MileageAnimalTierBadge } from '@/components/dashboard/mileage-animal-tier-badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -84,10 +86,12 @@ function highlightIconClass(kind: LeagueDailyHighlight['kind']) {
 function DailyHighlightCard({
   item,
   highlightMemberId,
+  memberMileageKmById,
   onOpenDetail,
 }: {
   item: LeagueDailyHighlight
   highlightMemberId?: string | null
+  memberMileageKmById?: ReadonlyMap<string, number>
   onOpenDetail: (item: LeagueDailyHighlight) => void
 }) {
   const Icon = highlightIcon(item.kind)
@@ -109,9 +113,16 @@ function DailyHighlightCard({
         <span className="truncate">{item.categoryLabel}</span>
       </div>
       {item.memberName ? (
-        <span className="truncate text-sm font-semibold text-lime-50">
-          {formatRankingMemberName(item.memberName, { isMe })}
-          {isMe ? <span className="ml-1 text-[10px] font-medium text-lime-300">나</span> : null}
+        <span className="flex min-w-0 items-baseline gap-1 truncate text-sm font-semibold text-lime-50">
+          <span className="truncate">
+            {formatRankingMemberName(item.memberName, { isMe })}
+            {isMe ? <span className="ml-1 text-[10px] font-medium text-lime-300">나</span> : null}
+          </span>
+          {item.memberId ? (
+            <MileageAnimalTierBadge
+              mileageKm={resolveMemberMileageKm(item.memberId, memberMileageKmById ?? new Map())}
+            />
+          ) : null}
         </span>
       ) : (
         <span className="truncate text-sm font-semibold text-lime-50">{item.headline}</span>
@@ -228,6 +239,7 @@ export function MemberLeagueMomentumStrip({
   highlightMemberId,
   onMemberSelect,
   rankingPeriodLabel,
+  memberMileageKmById,
   className,
 }: {
   dailyHighlights: {
@@ -237,6 +249,7 @@ export function MemberLeagueMomentumStrip({
   highlightMemberId?: string | null
   onMemberSelect?: (memberId: string, memberName: string) => void
   rankingPeriodLabel?: string
+  memberMileageKmById?: ReadonlyMap<string, number>
   className?: string
 }) {
   const [detailItem, setDetailItem] = useState<LeagueDailyHighlight | null>(null)
@@ -265,6 +278,7 @@ export function MemberLeagueMomentumStrip({
               key={item.id}
               item={item}
               highlightMemberId={highlightMemberId}
+              memberMileageKmById={memberMileageKmById}
               onOpenDetail={setDetailItem}
             />
           ))}
