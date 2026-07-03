@@ -622,7 +622,7 @@ function RankMedalDisplay({ rank }: { rank: number }) {
   if (medal) {
     return (
       <span
-        className="flex w-11 shrink-0 items-center justify-center text-[1.35rem] leading-none"
+        className="flex w-5 shrink-0 items-center justify-center text-base leading-none sm:w-11 sm:text-[1.35rem]"
         aria-label={`${rank}위`}
         title={`${rank}위`}
       >
@@ -631,9 +631,13 @@ function RankMedalDisplay({ rank }: { rank: number }) {
     )
   }
   return (
-    <span className="flex w-11 shrink-0 flex-col items-center justify-center leading-none">
-      <span className="text-xl font-bold tabular-nums text-zinc-200">{rank}</span>
-      <span className="text-[9px] font-semibold text-zinc-500">위</span>
+    <span
+      className="flex w-5 shrink-0 items-baseline justify-center whitespace-nowrap leading-none sm:w-11 sm:flex-col sm:items-center"
+      aria-label={`${rank}위`}
+      title={`${rank}위`}
+    >
+      <span className="text-[11px] font-bold tabular-nums text-zinc-200 sm:text-xl">{rank}</span>
+      <span className="text-[7px] font-semibold text-zinc-500 sm:text-[9px]">위</span>
     </span>
   )
 }
@@ -790,8 +794,8 @@ function RankingMemberStatusMessage({
   return (
     <span
       className={cn(
-        'shrink-0 truncate text-[11px] font-medium leading-tight',
-        compact && 'max-w-[4.75rem]',
+        'shrink-0 whitespace-nowrap text-[9px] font-medium leading-tight sm:min-w-0 sm:truncate sm:text-[11px]',
+        compact && 'sm:max-w-[4.75rem]',
       )}
       style={{ color: resolvePortalStatusMessageColor(color) }}
       title={label}
@@ -824,11 +828,11 @@ function RankingMemberNameCell({
   const hasBadges = Boolean(chaseBadgeLabel || isPortalCoach)
 
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-      <span className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
+    <span className="flex min-w-0 flex-1 items-center gap-0.5 sm:gap-1.5">
+      <span className="flex min-w-0 flex-1 items-baseline gap-0.5 sm:gap-1">
         <span
           className={cn(
-            'min-w-0 truncate font-medium',
+            'shrink-0 whitespace-nowrap text-[13px] font-medium sm:truncate sm:text-sm',
             rankingMemberNameClass(isMe, isSelected, Boolean(chaseBadgeLabel)),
           )}
         >
@@ -855,7 +859,7 @@ function RankDeltaIndicator({ delta }: { delta: RankDelta }) {
   if (delta.kind === 'same') {
     return (
       <span
-        className="flex w-9 shrink-0 justify-center text-[11px] font-semibold tabular-nums text-zinc-400"
+        className="flex w-3.5 shrink-0 justify-center text-[9px] font-semibold tabular-nums text-zinc-400 sm:w-9 sm:text-[11px]"
         aria-label="순위 변동 없음"
       >
         -
@@ -866,23 +870,28 @@ function RankDeltaIndicator({ delta }: { delta: RankDelta }) {
   if (delta.kind === 'up') {
     return (
       <span
-        className="flex w-9 shrink-0 justify-center text-[11px] font-semibold tabular-nums text-emerald-400"
+        className="flex w-4 shrink-0 justify-center text-[9px] font-semibold tabular-nums text-emerald-400 sm:w-9 sm:text-[11px]"
         aria-label={`${delta.amount}계단 상승`}
       >
-        ↑ {delta.amount}
+        ↑{delta.amount}
       </span>
     )
   }
 
   return (
     <span
-      className="flex w-9 shrink-0 justify-center text-[11px] font-semibold tabular-nums text-red-400"
+      className="flex w-4 shrink-0 justify-center text-[9px] font-semibold tabular-nums text-red-400 sm:w-9 sm:text-[11px]"
       aria-label={`${delta.amount}계단 하락`}
     >
-      ↓ {delta.amount}
+      ↓{delta.amount}
     </span>
   )
 }
+
+const RANKING_ROW_LAYOUT_CLASS =
+  'flex min-w-0 w-full items-center gap-0.5 rounded-lg border px-1.5 py-2 text-left text-sm sm:gap-2 sm:px-3 sm:py-2.5'
+
+const RANKING_ROW_VALUE_CLASS = 'ml-auto shrink-0 text-[11px] font-semibold tabular-nums sm:text-sm'
 
 function RankingsLoadErrorState({ onRetry }: { onRetry?: () => void }) {
   return (
@@ -1337,7 +1346,8 @@ function PbRankingRow({
       aria-current={isSelected ? 'true' : undefined}
       data-selected-member={isSelected ? 'true' : undefined}
       className={cn(
-        'flex min-w-0 w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-200',
+        RANKING_ROW_LAYOUT_CLASS,
+        'transition-all duration-200',
         topRankRowAccent(row.rank),
         rankingRowClass(isRowSelected),
       )}
@@ -1358,11 +1368,13 @@ function PbRankingRow({
         <span className="shrink-0 text-xs text-zinc-500">{distanceLabel}</span>
       ) : null}
       <span
-        className={cn('ml-auto shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
+        className={cn(RANKING_ROW_VALUE_CLASS, rankingValueClass(isRowSelected))}
       >
         {row.timeText}
       </span>
-      {isSelected ? <ChevronRight className="h-4 w-4 shrink-0 text-lime-400" aria-hidden /> : null}
+      {isSelected ? (
+        <ChevronRight className="hidden h-4 w-4 shrink-0 text-lime-400 sm:block" aria-hidden />
+      ) : null}
     </button>
   )
 }
@@ -1401,7 +1413,8 @@ function MileageRankingRow({
       aria-current={isSelected ? 'true' : undefined}
       data-selected-member={isSelected ? 'true' : undefined}
       className={cn(
-        'flex min-w-0 w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-200',
+        RANKING_ROW_LAYOUT_CLASS,
+        'transition-all duration-200',
         topRankRowAccent(row.rank),
         rankingRowClass(isRowSelected),
       )}
@@ -1419,11 +1432,13 @@ function MileageRankingRow({
         statusMessageColor={statusMessageColor}
       />
       <span
-        className={cn('ml-auto shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
+        className={cn(RANKING_ROW_VALUE_CLASS, rankingValueClass(isRowSelected))}
       >
         {formatMileageKmDisplay(row.mileageKm)}
       </span>
-      {isSelected ? <ChevronRight className="h-4 w-4 shrink-0 text-lime-400" aria-hidden /> : null}
+      {isSelected ? (
+        <ChevronRight className="hidden h-4 w-4 shrink-0 text-lime-400 sm:block" aria-hidden />
+      ) : null}
     </button>
   )
 }
@@ -1464,7 +1479,8 @@ function AttendanceRankingRow({
       aria-current={isSelected ? 'true' : undefined}
       data-selected-member={isSelected ? 'true' : undefined}
       className={cn(
-        'flex min-w-0 w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-200',
+        RANKING_ROW_LAYOUT_CLASS,
+        'transition-all duration-200',
         topRankRowAccent(row.rank),
         rankingRowClass(isRowSelected),
       )}
@@ -1482,11 +1498,13 @@ function AttendanceRankingRow({
         statusMessageColor={statusMessageColor}
       />
       <span
-        className={cn('ml-auto shrink-0 font-semibold tabular-nums', rankingValueClass(isRowSelected))}
+        className={cn(RANKING_ROW_VALUE_CLASS, rankingValueClass(isRowSelected))}
       >
         {formatAttendanceDaysDisplay(row.attendanceDays)}
       </span>
-      {isSelected ? <ChevronRight className="h-4 w-4 shrink-0 text-lime-400" aria-hidden /> : null}
+      {isSelected ? (
+        <ChevronRight className="hidden h-4 w-4 shrink-0 text-lime-400 sm:block" aria-hidden />
+      ) : null}
     </button>
   )
 }
@@ -1948,7 +1966,8 @@ function ScoreRankingRow({
       type="button"
       onClick={() => onMemberSelect?.(row.memberId, row.memberName)}
       className={cn(
-        'flex min-w-0 w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors',
+        RANKING_ROW_LAYOUT_CLASS,
+        'transition-colors',
         topRankRowAccent(row.rank),
         rankingRowClass(isRowSelected),
       )}
@@ -2768,11 +2787,6 @@ export function MemberRunningLeagueRankings({
           className,
         )}
       >
-        {animalTierHalfThresholds ? (
-          <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-200/90">
-            동물 등급 이벤트 기간 — 등급 기준 거리가 절반으로 적용됩니다.
-          </p>
-        ) : null}
       {showBrandHeader ? (
         <MemberPortalBrandHeader brand={portalBrand} action={brandHeaderAction} />
       ) : null}
