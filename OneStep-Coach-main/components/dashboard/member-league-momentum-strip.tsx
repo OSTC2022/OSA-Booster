@@ -87,11 +87,13 @@ function DailyHighlightCard({
   item,
   highlightMemberId,
   memberMileageKmById,
+  animalTierHalfThresholds = false,
   onOpenDetail,
 }: {
   item: LeagueDailyHighlight
   highlightMemberId?: string | null
   memberMileageKmById?: ReadonlyMap<string, number>
+  animalTierHalfThresholds?: boolean
   onOpenDetail: (item: LeagueDailyHighlight) => void
 }) {
   const Icon = highlightIcon(item.kind)
@@ -121,6 +123,7 @@ function DailyHighlightCard({
           {item.memberId ? (
             <MileageAnimalTierBadge
               mileageKm={resolveMemberMileageKm(item.memberId, memberMileageKmById ?? new Map())}
+              halfThresholds={animalTierHalfThresholds}
             />
           ) : null}
         </span>
@@ -240,6 +243,7 @@ export function MemberLeagueMomentumStrip({
   onMemberSelect,
   rankingPeriodLabel,
   memberMileageKmById,
+  animalTierHalfThresholds = false,
   className,
 }: {
   dailyHighlights: {
@@ -250,6 +254,7 @@ export function MemberLeagueMomentumStrip({
   onMemberSelect?: (memberId: string, memberName: string) => void
   rankingPeriodLabel?: string
   memberMileageKmById?: ReadonlyMap<string, number>
+  animalTierHalfThresholds?: boolean
   className?: string
 }) {
   const [detailItem, setDetailItem] = useState<LeagueDailyHighlight | null>(null)
@@ -279,6 +284,7 @@ export function MemberLeagueMomentumStrip({
               item={item}
               highlightMemberId={highlightMemberId}
               memberMileageKmById={memberMileageKmById}
+              animalTierHalfThresholds={animalTierHalfThresholds}
               onOpenDetail={setDetailItem}
             />
           ))}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
@@ -97,6 +97,12 @@ import {
   RANKING_LOAD_ERROR_MESSAGE,
 } from '@/lib/running-league/ranking-empty-states'
 import type { MemberRunningLeagueRankingBundle, MemberMonthlyLessonRow } from '@/lib/actions/running-league'
+
+const AnimalTierHalfThresholdsContext = createContext(false)
+
+function useAnimalTierHalfThresholds() {
+  return useContext(AnimalTierHalfThresholdsContext)
+}
 import type { AdultPortalBrandConfig } from '@/lib/adult-portal-brand'
 import type {
   PbDistanceLeaderboard,
@@ -814,6 +820,7 @@ function RankingMemberNameCell({
   statusMessage?: string | null
   statusMessageColor?: string | null
 }) {
+  const halfThresholds = useAnimalTierHalfThresholds()
   const hasBadges = Boolean(chaseBadgeLabel || isPortalCoach)
 
   return (
@@ -827,7 +834,7 @@ function RankingMemberNameCell({
         >
           {formatRankingMemberName(memberName, { isMe })}
         </span>
-        <MileageAnimalTierBadge mileageKm={mileageKm} />
+        <MileageAnimalTierBadge mileageKm={mileageKm} halfThresholds={halfThresholds} />
         <RankingMemberStatusMessage
           message={statusMessage}
           color={statusMessageColor}
@@ -2540,6 +2547,8 @@ export function MemberRunningLeagueRankings({
     )
   }, [rankingBundle])
 
+  const animalTierHalfThresholds = rankingBundle?.animalTierHalfThresholds ?? false
+
   const panelMember = selectedMember
 
   const panelMemberRank = panelMember
@@ -2741,6 +2750,7 @@ export function MemberRunningLeagueRankings({
         onMemberSelect={handleMemberSelect}
         rankingPeriodLabel={effectiveRankingPeriod.label}
         memberMileageKmById={memberMileageKmById}
+        animalTierHalfThresholds={animalTierHalfThresholds}
         className={MEMBER_PORTAL_CARD_CLASS}
       />
     ) : null
@@ -2750,13 +2760,19 @@ export function MemberRunningLeagueRankings({
   }
 
   return (
-    <section
-      className={cn(
-        showPortalShell && MEMBER_PORTAL_SHELL_CLASS,
-        'flex flex-col gap-2.5 sm:gap-4',
-        className,
-      )}
-    >
+    <AnimalTierHalfThresholdsContext.Provider value={animalTierHalfThresholds}>
+      <section
+        className={cn(
+          showPortalShell && MEMBER_PORTAL_SHELL_CLASS,
+          'flex flex-col gap-2.5 sm:gap-4',
+          className,
+        )}
+      >
+        {animalTierHalfThresholds ? (
+          <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-200/90">
+            동물 등급 이벤트 기간 — 등급 기준 거리가 절반으로 적용됩니다.
+          </p>
+        ) : null}
       {showBrandHeader ? (
         <MemberPortalBrandHeader brand={portalBrand} action={brandHeaderAction} />
       ) : null}
@@ -2852,5 +2868,6 @@ export function MemberRunningLeagueRankings({
         onSaved={handleMileageSaved}
       />
     </section>
+    </AnimalTierHalfThresholdsContext.Provider>
   )
 }

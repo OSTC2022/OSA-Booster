@@ -68,6 +68,15 @@ const CENTER_SETTINGS_MIGRATION_HINTS: Array<{
     sql: 'supabase/add-adult-portal-mileage-minimum.sql',
     label: '마일리지 최소 거리',
   },
+  {
+    fields: [
+      'adult_portal_animal_tier_half_enabled',
+      'adult_portal_animal_tier_half_start',
+      'adult_portal_animal_tier_half_end',
+    ],
+    sql: 'supabase/add-adult-portal-animal-tier-half.sql',
+    label: '동물 등급 절반 이벤트',
+  },
 ]
 
 function migrationHintForUpdatedFields(updatedFields: string[]): string | null {
@@ -132,6 +141,9 @@ export async function updateCenterSettings(formData: {
   adult_portal_notice?: string | null
   adult_portal_mileage_min_km_enabled?: boolean
   adult_portal_mileage_min_km?: number | null
+  adult_portal_animal_tier_half_enabled?: boolean
+  adult_portal_animal_tier_half_start?: string | null
+  adult_portal_animal_tier_half_end?: string | null
 }): Promise<{ data?: CenterSettings; error?: string }> {
   const user = await requireAuth()
   const input =
@@ -247,6 +259,19 @@ export async function updateCenterSettings(formData: {
       updateData.adult_portal_mileage_min_km =
         Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed * 10) / 10 : 3
     }
+  }
+  if (input.adult_portal_animal_tier_half_enabled !== undefined) {
+    updateData.adult_portal_animal_tier_half_enabled = input.adult_portal_animal_tier_half_enabled
+  }
+  if (input.adult_portal_animal_tier_half_start !== undefined) {
+    updateData.adult_portal_animal_tier_half_start = normalizeOptionalString(
+      input.adult_portal_animal_tier_half_start,
+    )
+  }
+  if (input.adult_portal_animal_tier_half_end !== undefined) {
+    updateData.adult_portal_animal_tier_half_end = normalizeOptionalString(
+      input.adult_portal_animal_tier_half_end,
+    )
   }
 
   const updatedFields = Object.keys(updateData).filter((key) => key !== 'updated_at')

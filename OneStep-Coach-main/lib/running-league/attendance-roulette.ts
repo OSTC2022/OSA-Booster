@@ -13,28 +13,95 @@ export type AttendanceRouletteSlot = {
   slotIndex: number
 }
 
+function circularSlotDistance(a: number, b: number, totalSlots: number): number {
+  const delta = Math.abs(a - b)
+  return Math.min(delta, totalSlots - delta)
+}
+
+/** 같은 회원 칸은 붙지 않도록, 기존 칸과 최대한 멀리(가능하면 1칸 이상 띄워) 배치 */
+function findBestRouletteSlotPosition(
+  existingSameMemberPositions: number[],
+  totalSlots: number,
+  slots: ReadonlyArray<AttendanceRouletteSlot | null>,
+): number {
+  const emptyIndices: number[] = []
+  for (let index = 0; index < totalSlots; index += 1) {
+    if (slots[index] == null) emptyIndices.push(index)
+  }
+  if (emptyIndices.length === 0) return 0
+  if (emptyIndices.length === 1) return emptyIndices[0]!
+
+  const occupiedIndices = slots
+    .map((slot, index) => (slot != null ? index : -1))
+    .filter((index) => index >= 0)
+
+  let bestPosition = emptyIndices[0]!
+  let bestScore = -1
+
+  for (const candidate of emptyIndices) {
+    const minDistance =
+      existingSameMemberPositions.length > 0
+        ? Math.min(
+            ...existingSameMemberPositions.map((position) =>
+              circularSlotDistance(candidate, position, totalSlots),
+            ),
+          )
+        : occupiedIndices.length === 0
+          ? totalSlots
+          : Math.min(
+              ...occupiedIndices.map((position) =>
+                circularSlotDistance(candidate, position, totalSlots),
+              ),
+            )
+
+    const gapBonus = minDistance >= 2 ? 10_000 : 0
+    const score = minDistance * 1_000 + gapBonus - candidate
+
+    if (score > bestScore) {
+      bestScore = score
+      bestPosition = candidate
+    }
+  }
+
+  return bestPosition
+}
+
 export function buildAttendanceRouletteSlots(
   members: ReadonlyArray<AttendanceRouletteMember>,
   colorForMember: (memberId: string, memberIndex: number) => string,
 ): AttendanceRouletteSlot[] {
-  const slots: AttendanceRouletteSlot[] = []
-  let slotIndex = 0
+  const activeMembers = members.filter((member) => member.attendanceDays > 0)
+  const totalSlots = activeMembers.reduce((sum, row) => sum + row.attendanceDays, 0)
+  if (totalSlots === 0) return []
 
-  members.forEach((member, memberIndex) => {
-    if (member.attendanceDays <= 0) return
+  const slots: Array<AttendanceRouletteSlot | null> = Array.from({ length: totalSlots }, () => null)
+  const positionsByMember = new Map<string, number[]>()
+  const maxDays = Math.max(...activeMembers.map((member) => member.attendanceDays))
+
+  const additions: Array<{ member: AttendanceRouletteMember; memberIndex: number }> = []
+  for (let layer = 0; layer < maxDays; layer += 1) {
+    activeMembers.forEach((member, memberIndex) => {
+      if (member.attendanceDays > layer) {
+        additions.push({ member, memberIndex })
+      }
+    })
+  }
+
+  for (const { member, memberIndex } of additions) {
+    const existingPositions = positionsByMember.get(member.memberId) ?? []
+    const position = findBestRouletteSlotPosition(existingPositions, totalSlots, slots)
     const color = colorForMember(member.memberId, memberIndex)
-    for (let day = 0; day < member.attendanceDays; day += 1) {
-      slots.push({
-        memberId: member.memberId,
-        memberName: member.memberName,
-        color,
-        slotIndex,
-      })
-      slotIndex += 1
-    }
-  })
 
-  return slots
+    slots[position] = {
+      memberId: member.memberId,
+      memberName: member.memberName,
+      color,
+      slotIndex: position,
+    }
+    positionsByMember.set(member.memberId, [...existingPositions, position])
+  }
+
+  return slots as AttendanceRouletteSlot[]
 }
 
 export function pickAttendanceRouletteWinner(slots: ReadonlyArray<AttendanceRouletteSlot>): {

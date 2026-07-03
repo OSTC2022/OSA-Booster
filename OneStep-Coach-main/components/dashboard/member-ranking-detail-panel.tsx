@@ -66,11 +66,13 @@ function MemberGraphSummaryHeader({
   mileageKm,
   isMe,
   isExplicitSelection,
+  animalTierHalfThresholds = false,
 }: {
   summary: ReturnType<typeof buildMemberGraphPanelSummary>
   mileageKm: number
   isMe: boolean
   isExplicitSelection: boolean
+  animalTierHalfThresholds?: boolean
 }) {
   return (
     <div
@@ -84,7 +86,11 @@ function MemberGraphSummaryHeader({
       <div className="space-y-1.5">
         <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-xl font-bold leading-tight text-lime-50">
           <span>{formatRankingMemberName(summary.displayName, { isMe })}</span>
-          <MileageAnimalTierBadge mileageKm={mileageKm} className="text-xs" />
+          <MileageAnimalTierBadge
+            mileageKm={mileageKm}
+            halfThresholds={animalTierHalfThresholds}
+            className="text-xs"
+          />
           {isMe && !isExplicitSelection ? (
             <span className="text-sm font-medium text-lime-300/80">나</span>
           ) : null}
@@ -132,6 +138,7 @@ export function MemberRankingDetailPanel({
 }: MemberRankingDetailPanelProps) {
   const isMobile = variant === 'mobile'
   const isMe = highlightMemberId != null && memberId === highlightMemberId
+  const animalTierHalfThresholds = rankingBundle?.animalTierHalfThresholds ?? false
 
   const portalPbRecords = useMemo(
     () => (rankingBundle ? filterPortalPbTrendRecords(rankingBundle.pbRecords) : []),
@@ -345,6 +352,7 @@ export function MemberRankingDetailPanel({
             mileageKm={memberMileageKm}
             isMe={isMe}
             isExplicitSelection={isExplicitSelection}
+            animalTierHalfThresholds={animalTierHalfThresholds}
           />
         ) : null}
 

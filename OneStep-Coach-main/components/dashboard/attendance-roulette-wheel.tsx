@@ -173,7 +173,7 @@ export function AttendanceRouletteWheel({
         <DialogHeader>
           <DialogTitle className="text-lime-100">출석 돌림판</DialogTitle>
           <DialogDescription className="text-zinc-400">
-            출석 1회마다 돌림판 칸 1개 · 칸마다 당첨 확률은 동일 · 확률은 출석 횟수만큼 올라감
+            출석 1회마다 돌림판 칸 1개 · 같은 회원 칸은 떨어져 배치 · 칸마다 당첨 확률은 동일
           </DialogDescription>
         </DialogHeader>
 

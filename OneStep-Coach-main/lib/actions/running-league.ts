@@ -43,6 +43,7 @@ import {
 } from '@/lib/running-league/mileage-leaderboard'
 import { getCenterSettingsCached } from '@/lib/data/center-settings-read'
 import { resolveMileageRecognitionFromCenterSettings, type MileageRecognition } from '@/lib/running-league/mileage-recognition'
+import { resolveAnimalTierHalfThresholdsFromCenterSettings } from '@/lib/running-league/mileage-animal-tier'
 import { resolvePortalRankingPeriod, type PortalRankingPeriod } from '@/lib/running-league/ranking-period'
 import { resolveAdultRunningMemberIds } from '@/lib/running-league/resolve-adult-running-member-ids'
 import { normalizeMemberGender } from '@/lib/running-league/ranking-gender'
@@ -1930,6 +1931,7 @@ export type MemberRunningLeagueRankingBundle = {
   mileageLogs: RunningLeagueMileageLog[]
   rankingPeriod: PortalRankingPeriod
   mileageRecognition: MileageRecognition
+  animalTierHalfThresholds: boolean
 }
 
 export type MemberMonthlyLessonRow = {
@@ -2021,6 +2023,7 @@ async function fetchMemberRunningLeagueHome(
   const centerSettings = await getCenterSettingsCached()
   const rankingPeriod = resolvePortalRankingPeriod(centerSettings)
   const mileageRecognition = resolveMileageRecognitionFromCenterSettings(centerSettings)
+  const animalTierHalfThresholds = resolveAnimalTierHalfThresholdsFromCenterSettings(centerSettings)
   const chaseMemberId = centerSettings.adult_portal_chase_member_id?.trim() || null
   const chaseLabel = centerSettings.adult_portal_chase_label?.trim() || null
   const { start, end } = rankingPeriod
@@ -2181,6 +2184,7 @@ async function fetchMemberRunningLeagueHome(
           mileageLogs: leagueMileageLogs,
           rankingPeriod,
           mileageRecognition,
+          animalTierHalfThresholds,
         }
       } catch (error) {
         console.error('fetchMemberRunningLeagueHome.rankings', error)

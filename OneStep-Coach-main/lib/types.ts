@@ -242,6 +242,12 @@ export interface CenterSettings {
   adult_portal_mileage_min_km_enabled?: boolean
   /** 마일리지 인정 최소 거리(km) — 설정값 이상만 집계 */
   adult_portal_mileage_min_km?: number | null
+  /** 동물 등급 기준 km 절반 이벤트 사용 */
+  adult_portal_animal_tier_half_enabled?: boolean
+  /** 동물 등급 절반 이벤트 시작일 (YYYY-MM-DD) */
+  adult_portal_animal_tier_half_start?: string | null
+  /** 동물 등급 절반 이벤트 종료일 (YYYY-MM-DD) */
+  adult_portal_animal_tier_half_end?: string | null
   updated_at: string
 }
 

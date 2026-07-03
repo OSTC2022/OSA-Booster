@@ -1,7 +1,8 @@
+import { format } from 'date-fns'
 import { buildMileageDistanceLeaderboard } from '@/lib/running-league/mileage-leaderboard'
 import type { MileageDistanceLeaderboard } from '@/lib/running-league/mileage-leaderboard'
 import type { MileageRecognition } from '@/lib/running-league/mileage-recognition'
-import type { RunningLeagueMileageLog, RunningLeagueParticipant } from '@/lib/types'
+import type { CenterSettings, RunningLeagueMileageLog, RunningLeagueParticipant } from '@/lib/types'
 
 export type MileageAnimalTier = {
   minKm: number
@@ -23,12 +24,64 @@ export const MILEAGE_ANIMAL_TIERS: readonly MileageAnimalTier[] = [
   { minKm: 0, emoji: '🐣', label: '병아리' },
 ] as const
 
-export function resolveMileageAnimalTier(mileageKm: number): MileageAnimalTier {
+export type MileageAnimalTierOptions = {
+  halfThresholds?: boolean
+}
+
+export function resolveAnimalTierHalfThresholdsActive(
+  settings:
+    | Pick<
+        CenterSettings,
+        | 'adult_portal_animal_tier_half_enabled'
+        | 'adult_portal_animal_tier_half_start'
+        | 'adult_portal_animal_tier_half_end'
+      >
+    | null
+    | undefined,
+  asOfDate = format(new Date(), 'yyyy-MM-dd'),
+): boolean {
+  if (!settings?.adult_portal_animal_tier_half_enabled) return false
+
+  const start = settings.adult_portal_animal_tier_half_start?.trim().slice(0, 10) || null
+  const end = settings.adult_portal_animal_tier_half_end?.trim().slice(0, 10) || null
+
+  if (start && asOfDate < start) return false
+  if (end && asOfDate > end) return false
+  return true
+}
+
+export function resolveAnimalTierHalfThresholdsFromCenterSettings(
+  settings: CenterSettings | null | undefined,
+  asOfDate?: string,
+): boolean {
+  return resolveAnimalTierHalfThresholdsActive(settings, asOfDate)
+}
+
+function effectiveTierMinKm(tier: MileageAnimalTier, halfThresholds: boolean): number {
+  if (!halfThresholds || tier.minKm <= 0) return tier.minKm
+  return Math.round((tier.minKm / 2) * 10) / 10
+}
+
+export function resolveMileageAnimalTier(
+  mileageKm: number,
+  options?: MileageAnimalTierOptions,
+): MileageAnimalTier {
   const km = Math.max(0, Math.round(mileageKm * 10) / 10)
+  const halfThresholds = Boolean(options?.halfThresholds)
+
   for (const tier of MILEAGE_ANIMAL_TIERS) {
-    if (km >= tier.minKm) return tier
+    if (km >= effectiveTierMinKm(tier, halfThresholds)) return tier
   }
   return MILEAGE_ANIMAL_TIERS[MILEAGE_ANIMAL_TIERS.length - 1]
+}
+
+export function formatMileageAnimalTierThreshold(
+  tier: MileageAnimalTier,
+  halfThresholds = false,
+): string {
+  const minKm = effectiveTierMinKm(tier, halfThresholds)
+  if (minKm <= 0) return '0km~'
+  return `${minKm}km~`
 }
 
 export function buildMemberMileageKmMap(
