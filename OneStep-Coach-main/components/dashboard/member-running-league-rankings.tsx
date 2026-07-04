@@ -622,7 +622,7 @@ function RankMedalDisplay({ rank }: { rank: number }) {
   if (medal) {
     return (
       <span
-        className="flex w-5 shrink-0 items-center justify-center text-base leading-none sm:w-11 sm:text-[1.35rem]"
+        className="flex w-6 shrink-0 items-center justify-center text-lg leading-none sm:w-11 sm:text-[1.35rem]"
         aria-label={`${rank}위`}
         title={`${rank}위`}
       >
@@ -631,13 +631,9 @@ function RankMedalDisplay({ rank }: { rank: number }) {
     )
   }
   return (
-    <span
-      className="flex w-5 shrink-0 items-baseline justify-center whitespace-nowrap leading-none sm:w-11 sm:flex-col sm:items-center"
-      aria-label={`${rank}위`}
-      title={`${rank}위`}
-    >
-      <span className="text-[11px] font-bold tabular-nums text-zinc-200 sm:text-xl">{rank}</span>
-      <span className="text-[7px] font-semibold text-zinc-500 sm:text-[9px]">위</span>
+    <span className="flex w-6 shrink-0 flex-col items-center justify-center leading-none sm:w-11">
+      <span className="text-base font-bold tabular-nums text-zinc-200 sm:text-xl">{rank}</span>
+      <span className="text-[8px] font-semibold text-zinc-500 sm:text-[9px]">위</span>
     </span>
   )
 }
@@ -753,18 +749,29 @@ function buildDisplayRows<T extends RankedRow>(
   return [...topRows, myRow]
 }
 
+const RANKING_NEIGHBOR_PREVIEW_COUNT = 5
+const RANKING_NEIGHBOR_RADIUS = 2
+
 function buildNeighborRankRows<T extends { memberId: string }>(
   ranked: T[],
   highlightMemberId?: string | null,
 ): T[] {
   if (ranked.length === 0) return []
-  if (!highlightMemberId) return ranked.slice(0, Math.min(3, ranked.length))
+
+  const previewCount = Math.min(RANKING_NEIGHBOR_PREVIEW_COUNT, ranked.length)
+  if (!highlightMemberId) return ranked.slice(0, previewCount)
 
   const myIndex = ranked.findIndex((row) => row.memberId === highlightMemberId)
-  if (myIndex < 0) return ranked.slice(0, Math.min(3, ranked.length))
+  if (myIndex < 0) return ranked.slice(0, previewCount)
 
-  const start = Math.max(0, myIndex - 1)
-  const end = Math.min(ranked.length, myIndex + 2)
+  let start = Math.max(0, myIndex - RANKING_NEIGHBOR_RADIUS)
+  let end = Math.min(ranked.length, myIndex + RANKING_NEIGHBOR_RADIUS + 1)
+
+  while (end - start < previewCount && (start > 0 || end < ranked.length)) {
+    if (start > 0) start -= 1
+    if (end - start < previewCount && end < ranked.length) end += 1
+  }
+
   return ranked.slice(start, end)
 }
 
@@ -794,7 +801,7 @@ function RankingMemberStatusMessage({
   return (
     <span
       className={cn(
-        'shrink-0 whitespace-nowrap text-[9px] font-medium leading-tight sm:min-w-0 sm:truncate sm:text-[11px]',
+        'shrink-0 whitespace-nowrap text-[10px] font-medium leading-tight sm:min-w-0 sm:truncate sm:text-[11px]',
         compact && 'sm:max-w-[4.75rem]',
       )}
       style={{ color: resolvePortalStatusMessageColor(color) }}
@@ -828,11 +835,11 @@ function RankingMemberNameCell({
   const hasBadges = Boolean(chaseBadgeLabel || isPortalCoach)
 
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-0.5 sm:gap-1.5">
-      <span className="flex min-w-0 flex-1 items-baseline gap-0.5 sm:gap-1">
+    <span className="flex min-w-0 flex-1 items-center gap-1 sm:gap-1.5">
+      <span className="flex min-w-0 flex-1 items-baseline gap-1 sm:gap-1">
         <span
           className={cn(
-            'shrink-0 whitespace-nowrap text-[13px] font-medium sm:truncate sm:text-sm',
+            'shrink-0 whitespace-nowrap text-sm font-medium sm:truncate',
             rankingMemberNameClass(isMe, isSelected, Boolean(chaseBadgeLabel)),
           )}
         >
@@ -859,7 +866,7 @@ function RankDeltaIndicator({ delta }: { delta: RankDelta }) {
   if (delta.kind === 'same') {
     return (
       <span
-        className="flex w-3.5 shrink-0 justify-center text-[9px] font-semibold tabular-nums text-zinc-400 sm:w-9 sm:text-[11px]"
+        className="flex w-5 shrink-0 justify-center text-[10px] font-semibold tabular-nums text-zinc-400 sm:w-9 sm:text-[11px]"
         aria-label="순위 변동 없음"
       >
         -
@@ -870,7 +877,7 @@ function RankDeltaIndicator({ delta }: { delta: RankDelta }) {
   if (delta.kind === 'up') {
     return (
       <span
-        className="flex w-4 shrink-0 justify-center text-[9px] font-semibold tabular-nums text-emerald-400 sm:w-9 sm:text-[11px]"
+        className="flex w-6 shrink-0 justify-center text-[10px] font-semibold tabular-nums text-emerald-400 sm:w-9 sm:text-[11px]"
         aria-label={`${delta.amount}계단 상승`}
       >
         ↑{delta.amount}
@@ -880,7 +887,7 @@ function RankDeltaIndicator({ delta }: { delta: RankDelta }) {
 
   return (
     <span
-      className="flex w-4 shrink-0 justify-center text-[9px] font-semibold tabular-nums text-red-400 sm:w-9 sm:text-[11px]"
+      className="flex w-6 shrink-0 justify-center text-[10px] font-semibold tabular-nums text-red-400 sm:w-9 sm:text-[11px]"
       aria-label={`${delta.amount}계단 하락`}
     >
       ↓{delta.amount}
@@ -889,9 +896,9 @@ function RankDeltaIndicator({ delta }: { delta: RankDelta }) {
 }
 
 const RANKING_ROW_LAYOUT_CLASS =
-  'flex min-w-0 w-full items-center gap-0.5 rounded-lg border px-1.5 py-2 text-left text-sm sm:gap-2 sm:px-3 sm:py-2.5'
+  'flex min-w-0 w-full items-center gap-1 rounded-lg border px-2 py-2.5 text-left text-sm sm:gap-2 sm:px-3'
 
-const RANKING_ROW_VALUE_CLASS = 'ml-auto shrink-0 text-[11px] font-semibold tabular-nums sm:text-sm'
+const RANKING_ROW_VALUE_CLASS = 'ml-auto shrink-0 text-xs font-semibold tabular-nums sm:text-sm'
 
 function RankingsLoadErrorState({ onRetry }: { onRetry?: () => void }) {
   return (
