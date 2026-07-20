@@ -3,6 +3,7 @@
 import { MemberRunningLeagueRankings } from '@/components/dashboard/member-running-league-rankings'
 import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-brand-header'
 import { AttendanceRouletteWheel } from '@/components/dashboard/attendance-roulette-wheel'
+import { ChaseLadderGame } from '@/components/dashboard/chase-ladder-game'
 import { MemberRunningLeagueTrainingSchedule } from '@/components/dashboard/member-running-league-training-schedule'
 import { MemberPortalNoticePanel } from '@/components/dashboard/member-portal-notice-panel'
 import type { MemberRunningLeagueHome } from '@/lib/actions/running-league'
@@ -54,10 +55,18 @@ export function AdultRunningPortalAdminView({
           brand={portalBrand}
           action={
             runningLeagueHome.rankingBundle ? (
-              <AttendanceRouletteWheel
-                rankingBundle={runningLeagueHome.rankingBundle}
-                canSpin
-              />
+              <div className="flex items-center gap-1.5">
+                <ChaseLadderGame
+                  rankingBundle={runningLeagueHome.rankingBundle}
+                  chaseMemberId={resolvedChaseMemberId}
+                  chaseLabel={resolvedChaseLabel}
+                  canManageExclusions
+                />
+                <AttendanceRouletteWheel
+                  rankingBundle={runningLeagueHome.rankingBundle}
+                  canSpin
+                />
+              </div>
             ) : null
           }
         />

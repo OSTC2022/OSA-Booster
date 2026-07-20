@@ -26,6 +26,7 @@ import { MemberCenterContactCard } from '@/components/members/member-center-cont
 import { MemberRunningLeagueRankings } from '@/components/dashboard/member-running-league-rankings'
 import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-brand-header'
 import { AttendanceRouletteWheel } from '@/components/dashboard/attendance-roulette-wheel'
+import { ChaseLadderGame } from '@/components/dashboard/chase-ladder-game'
 import { MemberPortalNoticePanel } from '@/components/dashboard/member-portal-notice-panel'
 import {
   MemberRunningLeagueTrainingSchedule,
@@ -171,10 +172,18 @@ export function MemberMyPage({
             brand={adultPortalBrand}
             action={
               runningLeagueHome?.rankingBundle ? (
-                <AttendanceRouletteWheel
-                  rankingBundle={runningLeagueHome.rankingBundle}
-                  canSpin={canAccessSettingsArea(role)}
-                />
+                <div className="flex items-center gap-1.5">
+                  <ChaseLadderGame
+                    rankingBundle={runningLeagueHome.rankingBundle}
+                    chaseMemberId={runningLeagueHome.chaseMemberId}
+                    chaseLabel={runningLeagueHome.chaseLabel}
+                    canManageExclusions={canAccessSettingsArea(role)}
+                  />
+                  <AttendanceRouletteWheel
+                    rankingBundle={runningLeagueHome.rankingBundle}
+                    canSpin={canAccessSettingsArea(role)}
+                  />
+                </div>
               ) : null
             }
           />
