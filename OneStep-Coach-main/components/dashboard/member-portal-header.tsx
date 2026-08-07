@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Download, LogOut, Share2, User as UserIcon } from 'lucide-react'
 import { BrandPulseAppIcon } from '@/components/brand/brand-pulse-mark'
+import { MemberCenterContactDialog } from '@/components/members/member-center-contact-dialog'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,7 +38,7 @@ function portalTitle(pathname: string, hash: string, role?: string | null): stri
 }
 
 function portalBrandLabel(role?: string | null): string {
-  return isAdultPortalUser(role) ? 'ONE STEP ATHLETICS' : 'OneStep Athlete'
+  return isAdultPortalUser(role) ? 'BOOSTER RUNNING CREW' : 'Booster Athlete'
 }
 
 interface MemberPortalHeaderProps {
@@ -48,6 +49,7 @@ export function MemberPortalHeader({ user }: MemberPortalHeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [hash, setHash] = useState('')
+  const [centerContactOpen, setCenterContactOpen] = useState(false)
 
   useEffect(() => {
     function syncHash() {
@@ -94,89 +96,103 @@ export function MemberPortalHeader({ user }: MemberPortalHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-14 max-w-[1120px] items-center gap-2 px-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:gap-3 sm:px-6 lg:px-8">
-        <Link
-          href="/dashboard/my"
-          className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-2.5"
-        >
-          <BrandPulseAppIcon className="h-8 w-8 shrink-0" />
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-bold text-foreground">{brandLabel}</p>
-            <p className="truncate text-[11px] text-muted-foreground">{title}</p>
-          </div>
-        </Link>
+    <>
+      <header className="sticky top-0 z-40 border-b border-primary/15 bg-[#090b12]/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-[#090b12]/70">
+        <div className="mx-auto flex h-14 max-w-[1120px] items-center gap-2 px-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:gap-3 sm:px-6 lg:px-8">
+          <Link
+            href="/dashboard/my"
+            className="flex min-w-0 flex-1 items-center sm:flex-none"
+          >
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-bold text-foreground">{brandLabel}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{title}</p>
+            </div>
+          </Link>
 
-        <div className="hidden flex-1 sm:block" />
+          <div className="hidden flex-1 sm:block" />
 
-        <div className="relative z-[1] flex shrink-0 items-center gap-1 sm:gap-1.5">
-          <MemberBoardPopover
-            userId={user.id}
-            kind="notice"
-            audience={isAdultPortalUser(user.role) ? 'adult' : 'general'}
-          />
-          <MemberBoardPopover
-            userId={user.id}
-            kind="event"
-            audience={isAdultPortalUser(user.role) ? 'adult' : 'general'}
-          />
+          <div className="relative z-[1] flex shrink-0 items-center gap-0.5 sm:gap-1">
+            <MemberBoardPopover
+              userId={user.id}
+              kind="notice"
+              audience={isAdultPortalUser(user.role) ? 'adult' : 'general'}
+            />
+            <MemberBoardPopover
+              userId={user.id}
+              kind="event"
+              audience={isAdultPortalUser(user.role) ? 'adult' : 'general'}
+            />
 
-          <NotificationBell userId={user.id} />
-
-          <div className="hidden items-center gap-1.5 md:flex">
+            {/* 알림 > 링크 > 앱설치 > 원스텝심볼 > 프로필 */}
+            <NotificationBell userId={user.id} />
             <ShareWebsiteButton />
-            <InstallAppButton showLabel className="shrink-0" />
-          </div>
+            <InstallAppButton showLabel={false} size="icon" className="h-9 w-9 shrink-0" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0 touch-manipulation"
+              aria-label="코치 & 센터 연락"
+              title="코치 & 센터 연락"
+              onClick={() => setCenterContactOpen(true)}
+            >
+              <BrandPulseAppIcon className="h-7 w-7" glow />
+            </Button>
 
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                className="relative h-10 w-10 shrink-0 rounded-full p-0 touch-manipulation"
-                aria-label="프로필 메뉴"
-              >
-                <UserAvatar user={user} className="pointer-events-none h-9 w-9" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {user.full_name || '사용자'}
-                  </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/my/profile">
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  <span>프로필 수정</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="md:hidden" onClick={() => void handleShareFromMenu()}>
-                <Share2 className="mr-2 h-4 w-4" />
-                <span>로그인 주소 복사</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="md:hidden" onClick={() => void handleInstallFromMenu()}>
-                <Download className="mr-2 h-4 w-4" />
-                <span>앱 설치</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => void handleSignOut()}
-                className="text-destructive focus:text-destructive"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>로그아웃</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="relative h-10 w-10 shrink-0 rounded-full p-0 touch-manipulation"
+                  aria-label="프로필 메뉴"
+                >
+                  <UserAvatar user={user} className="pointer-events-none h-9 w-9" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user.full_name || '사용자'}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/my/profile">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>프로필 수정</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="md:hidden" onClick={() => void handleShareFromMenu()}>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  <span>로그인 주소 복사</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="md:hidden" onClick={() => void handleInstallFromMenu()}>
+                  <Download className="mr-2 h-4 w-4" />
+                  <span>앱 설치</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => void handleSignOut()}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>로그아웃</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <MemberCenterContactDialog
+        open={centerContactOpen}
+        onOpenChange={setCenterContactOpen}
+      />
+    </>
   )
 }

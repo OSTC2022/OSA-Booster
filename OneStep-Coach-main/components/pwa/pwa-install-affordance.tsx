@@ -13,7 +13,7 @@ export function PwaInstallAffordance() {
   const showShare = pathname.startsWith('/auth/login')
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-[70] flex justify-end gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[70] flex justify-start gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-24 sm:px-4 sm:pr-28">
       <div className="pointer-events-auto flex items-center gap-2">
         {showShare ? <ShareWebsiteButton /> : null}
         <InstallAppButton showLabel className="shadow-sm" />

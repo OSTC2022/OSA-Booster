@@ -15,7 +15,7 @@ export type MileageRankHistoryPoint = {
 
 function formatChartDate(value: string): string {
   try {
-    return format(parseISO(value), 'M/d', { locale: ko })
+    return format(parseISO(value.slice(0, 10)), 'M/d', { locale: ko })
   } catch {
     return value
   }
@@ -66,7 +66,9 @@ function collectMileageSnapshotDates(
 ): string[] {
   const dates = new Set<string>()
   for (const log of logs) {
-    if (log.member_id === memberId) dates.add(log.logged_at)
+    if (log.member_id !== memberId) continue
+    const key = String(log.logged_at ?? '').trim().slice(0, 10)
+    if (key) dates.add(key)
   }
   return [...dates].sort()
 }

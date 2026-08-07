@@ -1077,7 +1077,35 @@ export function ChaseLadderGame({
     setFallElapsedMs(0)
   }
 
-  if (!resolvedChaseMemberId) return null
+  if (!resolvedChaseMemberId) {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={cn(
+              'h-9 gap-1.5 border-orange-500/30 bg-orange-500/5 px-2.5 text-[11px] text-orange-100 hover:bg-orange-500/10',
+              className,
+            )}
+            aria-label={`${chaseTabLabel} 경품 사다리 열기`}
+          >
+            <Trophy className="h-4 w-4 shrink-0 text-orange-300" />
+            <span className="sm:inline">사다리</span>
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-sm border-orange-500/20 bg-zinc-950 text-zinc-100">
+          <DialogHeader>
+            <DialogTitle className="text-orange-100">{chaseTabLabel} 행운의 사다리</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              설정에서 술래(이겨라 대상)를 지정하면 사다리를 이용할 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   const isBusy =
     phase === 'drawing' ||
@@ -1099,7 +1127,7 @@ export function ChaseLadderGame({
           aria-label={`${chaseTabLabel} 경품 사다리 열기`}
         >
           <Trophy className="h-4 w-4 shrink-0 text-orange-300" />
-          <span className="hidden sm:inline">사다리</span>
+          <span className="sm:inline">사다리</span>
         </Button>
       </DialogTrigger>
 

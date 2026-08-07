@@ -46,7 +46,7 @@ export function AdultPortalNoticeSettingsPanel({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Megaphone className="h-4 w-4 text-lime-400" />
+          <Megaphone className="h-4 w-4 text-orange-400" />
           공지사항
         </CardTitle>
         <p className="text-sm text-muted-foreground">

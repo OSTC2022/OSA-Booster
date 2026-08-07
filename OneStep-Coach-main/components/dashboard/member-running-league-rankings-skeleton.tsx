@@ -16,7 +16,7 @@ export function MemberRunningLeagueRankingsSkeleton({
       <Skeleton className="h-28 w-full rounded-xl bg-zinc-800/60" />
       <Skeleton className="h-[280px] w-full rounded-xl bg-zinc-800/70" />
       <Skeleton className="h-36 w-full rounded-xl bg-zinc-800/60" />
-      <Skeleton className="h-12 w-full rounded-lg bg-lime-500/10" />
+      <Skeleton className="h-12 w-full rounded-lg bg-orange-500/10" />
       <Skeleton className="h-20 w-full rounded-xl bg-zinc-800/50" />
     </section>
   )

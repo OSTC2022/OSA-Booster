@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils'
 interface MemberCenterContactCardProps {
   coach: MemberCoachContactView
   center: MemberCenterContactView
+  className?: string
 }
 
 function RoleCard({
@@ -144,6 +145,7 @@ function buildUnavailableNotice(flags: {
 export function MemberCenterContactCard({
   coach,
   center,
+  className,
 }: MemberCenterContactCardProps) {
   const [kakaoDialogOpen, setKakaoDialogOpen] = useState(false)
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false)
@@ -191,7 +193,7 @@ export function MemberCenterContactCard({
   }
 
   return (
-    <Card className="border-border/70">
+    <Card className={cn('border-border/70', className)}>
       <CardHeader className="pb-2 sm:px-6">
         <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
           <Users className="h-4 w-4 text-primary" />

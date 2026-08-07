@@ -41,4 +41,9 @@ ALTER TABLE public.center_settings
 ALTER TABLE public.center_settings
   ADD COLUMN IF NOT EXISTS adult_portal_notice TEXT;
 
+-- 개인전 · 팀전 표시 모드
+ALTER TABLE public.center_settings
+  ADD COLUMN IF NOT EXISTS adult_portal_ranking_show_individual BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS adult_portal_ranking_show_team BOOLEAN NOT NULL DEFAULT false;
+
 NOTIFY pgrst, 'reload schema';

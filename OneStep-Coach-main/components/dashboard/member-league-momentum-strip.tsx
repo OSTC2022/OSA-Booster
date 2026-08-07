@@ -61,7 +61,7 @@ function highlightIconClass(kind: LeagueDailyHighlight['kind']) {
     case 'league_pulse':
       return 'text-sky-300'
     case 'runner_up':
-      return 'text-lime-300'
+      return 'text-orange-300'
     case 'next_rank_hunt':
       return 'text-orange-300'
     case 'top_five_push':
@@ -79,7 +79,7 @@ function highlightIconClass(kind: LeagueDailyHighlight['kind']) {
     case 'chase_pulse':
       return 'text-fuchsia-300'
     default:
-      return 'text-lime-300'
+      return 'text-orange-300'
   }
 }
 
@@ -106,8 +106,8 @@ function DailyHighlightCard({
       className={cn(
         'flex min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
         isMe
-          ? 'border-lime-400/40 bg-lime-500/12 hover:bg-lime-500/16'
-          : 'border-lime-500/15 bg-black/30 hover:border-lime-500/30 hover:bg-black/40',
+          ? 'border-orange-400/40 bg-orange-500/12 hover:bg-orange-500/16'
+          : 'border-orange-500/15 bg-black/30 hover:border-orange-500/30 hover:bg-black/40',
       )}
     >
       <div className="flex items-center gap-1.5 text-[10px] font-medium text-zinc-400">
@@ -115,10 +115,10 @@ function DailyHighlightCard({
         <span className="truncate">{item.categoryLabel}</span>
       </div>
       {item.memberName ? (
-        <span className="flex min-w-0 items-baseline gap-1 truncate text-sm font-semibold text-lime-50">
+        <span className="flex min-w-0 items-baseline gap-1 truncate text-sm font-semibold text-orange-50">
           <span className="truncate">
             {formatRankingMemberName(item.memberName, { isMe })}
-            {isMe ? <span className="ml-1 text-[10px] font-medium text-lime-300">나</span> : null}
+            {isMe ? <span className="ml-1 text-[10px] font-medium text-orange-300">나</span> : null}
           </span>
           {item.memberId ? (
             <MileageAnimalTierBadge
@@ -128,7 +128,7 @@ function DailyHighlightCard({
           ) : null}
         </span>
       ) : (
-        <span className="truncate text-sm font-semibold text-lime-50">{item.headline}</span>
+        <span className="truncate text-sm font-semibold text-orange-50">{item.headline}</span>
       )}
       <span
         className={cn(
@@ -139,7 +139,7 @@ function DailyHighlightCard({
               ? 'text-red-300'
               : item.kind === 'chase_pursuit'
                 ? 'text-orange-300'
-                : 'text-lime-200/90',
+                : 'text-orange-200/90',
         )}
       >
         {item.memberName ? item.headline : item.detail}
@@ -173,7 +173,7 @@ function HighlightDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent mobileSheet className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lime-100">
+          <DialogTitle className="flex items-center gap-2 text-orange-100">
             <Icon className={cn('h-4 w-4 shrink-0', highlightIconClass(item.kind))} aria-hidden />
             {item.categoryLabel}
           </DialogTitle>
@@ -184,9 +184,9 @@ function HighlightDetailDialog({
 
         <div className="space-y-3 py-1">
           {item.memberName ? (
-            <p className="text-lg font-semibold text-lime-50">
+            <p className="text-lg font-semibold text-orange-50">
               {formatRankingMemberName(item.memberName, { isMe })}
-              {isMe ? <span className="ml-2 text-sm font-medium text-lime-300">나</span> : null}
+              {isMe ? <span className="ml-2 text-sm font-medium text-orange-300">나</span> : null}
             </p>
           ) : null}
           <p
@@ -198,7 +198,7 @@ function HighlightDetailDialog({
                   ? 'text-red-300'
                   : item.kind === 'chase_pursuit'
                     ? 'text-orange-300'
-                    : 'text-lime-200',
+                    : 'text-orange-200',
             )}
           >
             {item.headline}
@@ -265,11 +265,11 @@ export function MemberLeagueMomentumStrip({
     <>
       <div
         className={cn(
-          'rounded-xl border border-lime-500/20 bg-gradient-to-br from-black/50 to-lime-500/[0.06] p-3 sm:p-4',
+          'rounded-xl border border-orange-500/20 bg-gradient-to-br from-black/50 to-orange-500/[0.06] p-3 sm:p-4',
           className,
         )}
       >
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-lime-300/80">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-orange-300/80">
           리그 하이라이트
           <span className="ml-1.5 font-normal normal-case text-zinc-500">
             · {dailyHighlights.spotlightDateLabel}

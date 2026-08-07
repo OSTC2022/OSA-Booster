@@ -1,15 +1,8 @@
 'use client'
 
-import {
-  Children,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { type ReactNode } from 'react'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
-import { ko } from 'date-fns/locale'
 import {
   Activity,
   CalendarDays,
@@ -17,23 +10,19 @@ import {
   ClipboardCheck,
   CreditCard,
   LineChart,
-  Trophy,
-  User,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MemberCenterContactCard } from '@/components/members/member-center-contact-card'
 import { MemberRunningLeagueRankings } from '@/components/dashboard/member-running-league-rankings'
 import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-brand-header'
 import { AttendanceRouletteWheel } from '@/components/dashboard/attendance-roulette-wheel'
 import { ChaseLadderGame } from '@/components/dashboard/chase-ladder-game'
-import { MemberPortalNoticePanel } from '@/components/dashboard/member-portal-notice-panel'
-import {
-  MemberRunningLeagueTrainingSchedule,
-} from '@/components/dashboard/member-running-league-training-schedule'
+import { MemberPortalInfoAccordion } from '@/components/dashboard/member-portal-info-accordion'
 import type { MemberRunningLeagueHome } from '@/lib/actions/running-league'
 import type { CenterRunningTrainingScheduleBundle } from '@/lib/actions/center-running-training-schedule'
+import type { PortalMarathonRaceView } from '@/lib/portal-marathon-races'
 import type { MemberPortalData, MemberPortalSessionStatus } from '@/lib/member-portal-types'
+import type { CenterBoardPost } from '@/lib/types'
 import { MEMBER_REPORT_MIN_RECORDS } from '@/lib/member-portal-summary'
 import { portalStatusToneClass } from '@/lib/member-portal-status'
 import type { Member } from '@/lib/types'
@@ -54,6 +43,9 @@ interface MemberMyPageProps {
   adultPortalBlindMemberUsage?: boolean
   adultPortalBrand?: AdultPortalBrandConfig | null
   adultPortalNotice?: string | null
+  noticeBoardPosts?: CenterBoardPost[]
+  marathonRaces?: PortalMarathonRaceView[]
+  marathonTableReady?: boolean
 }
 
 function formatSportProfile(member: Member): string | null {
@@ -138,8 +130,11 @@ export function MemberMyPage({
   adultPortalBlindMemberUsage = false,
   adultPortalBrand = null,
   adultPortalNotice = null,
+  noticeBoardPosts = [],
+  marathonRaces = [],
+  marathonTableReady = true,
 }: MemberMyPageProps) {
-  const { member, summary, centerContact, coachContact, sessionStatus } = data
+  const { member, summary, sessionStatus } = data
   const isAdultMember = isAdultPortalUser(role)
   const instructorName = member.primary_instructor?.name ?? '자율배정'
   const sportProfile = formatSportProfile(member)
@@ -171,29 +166,29 @@ export function MemberMyPage({
           <MemberPortalBrandHeader
             brand={adultPortalBrand}
             action={
-              runningLeagueHome?.rankingBundle ? (
-                <div className="flex items-center gap-1.5">
-                  <ChaseLadderGame
-                    rankingBundle={runningLeagueHome.rankingBundle}
-                    chaseMemberId={runningLeagueHome.chaseMemberId}
-                    chaseLabel={runningLeagueHome.chaseLabel}
-                    canManageExclusions={canAccessSettingsArea(role)}
-                  />
-                  <AttendanceRouletteWheel
-                    rankingBundle={runningLeagueHome.rankingBundle}
-                    canSpin={canAccessSettingsArea(role)}
-                  />
-                </div>
-              ) : null
+              <div className="flex items-center gap-1.5">
+                <ChaseLadderGame
+                  rankingBundle={runningLeagueHome?.rankingBundle ?? null}
+                  chaseMemberId={runningLeagueHome?.chaseMemberId}
+                  chaseLabel={runningLeagueHome?.chaseLabel}
+                  canManageExclusions={canAccessSettingsArea(role)}
+                />
+                <AttendanceRouletteWheel
+                  rankingBundle={runningLeagueHome?.rankingBundle ?? null}
+                  canSpin={canAccessSettingsArea(role)}
+                />
+              </div>
             }
           />
-          <MemberPortalNoticePanel notice={adultPortalNotice} />
-          <MemberRunningLeagueTrainingSchedule
-            days={trainingScheduleDays}
-            tableReady={trainingScheduleReady}
+          <MemberPortalInfoAccordion
+            notice={adultPortalNotice}
+            boardPosts={noticeBoardPosts}
+            trainingDays={trainingScheduleDays}
+            trainingTableReady={trainingScheduleReady}
+            marathonRaces={marathonRaces}
+            marathonTableReady={marathonTableReady}
             canParticipate={!adminPreview}
             readOnly={adminPreview}
-            embedded
           />
           {runningLeagueHome ? (
             <MemberRunningLeagueRankings
@@ -224,100 +219,7 @@ export function MemberMyPage({
         </section>
       ) : null}
 
-      {isAdultMember ? (
-        showAdultMemberUsageSections ? (
-        <section className="space-y-4 border-t border-border/40 pt-4 sm:space-y-5 sm:pt-6">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold sm:text-lg">내 회원 정보</h2>
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              수업권·출석·컨디션 등 센터 이용 정보입니다.
-            </p>
-          </div>
-
-          <MemberSummaryCardCarousel>
-            <ProfileSummaryCard
-              name={member.name}
-              sportProfile={sportProfile}
-              school={member.school}
-              instructorName={instructorName}
-              compact
-              className="w-[min(46vw,180px)] shrink-0 snap-start lg:w-auto lg:min-w-0"
-            />
-            <SummaryCard
-              title={sessionStatus.kind === 'monthly' ? '수업권 남은 기간' : '남은 수업'}
-              icon={<CreditCard className="h-3.5 w-3.5 shrink-0 opacity-70" />}
-              value={
-                sessionStatus.kind === 'monthly'
-                  ? sessionStatus.remainingPeriodLabel
-                  : `${sessionStatus.remainingSessions ?? 0}회`
-              }
-              valueClassName={
-                sessionStatus.kind === 'monthly'
-                  ? monthlySessionStatusToneClass(sessionStatus)
-                  : !sessionStatus.isUsable
-                    ? 'text-amber-300'
-                    : undefined
-              }
-              hint={formatRemainingSessionsHint(sessionStatus)}
-              compact
-              className="w-[min(46vw,180px)] shrink-0 snap-start lg:w-auto lg:min-w-0"
-            />
-            <SummaryCard
-              title="최근 출석일"
-              icon={<CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-70" />}
-              value={
-                summary.recentAttendanceDate
-                  ? format(parseISO(summary.recentAttendanceDate), 'M/d')
-                  : '기록 없음'
-              }
-              hint="마지막 수업"
-              compact
-              className="w-[min(46vw,180px)] shrink-0 snap-start lg:w-auto lg:min-w-0"
-            />
-            <SummaryCard
-              title="최근 컨디션"
-              icon={<Activity className="h-3.5 w-3.5 shrink-0 opacity-70" />}
-              value={summary.recentCondition.label}
-              valueClassName={portalStatusToneClass(summary.recentCondition.tone)}
-              hint={summary.recentCondition.hint}
-              compact
-              className="w-[min(46vw,180px)] shrink-0 snap-start lg:w-auto lg:min-w-0"
-            />
-            <SummaryCard
-              title="오늘 기록"
-              icon={<ClipboardCheck className="h-3.5 w-3.5 shrink-0 opacity-70" />}
-              value={todayRecordLabel}
-              valueClassName={
-                summary.todayRecorded ? 'text-emerald-300' : 'text-amber-300'
-              }
-              hint={formatTodayRecordHint(summary.todayRecorded)}
-              compact
-              className="w-[min(46vw,180px)] shrink-0 snap-start lg:w-auto lg:min-w-0"
-            />
-          </MemberSummaryCardCarousel>
-
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/10 to-transparent">
-            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-              <div className="space-y-1">
-                <p className="flex items-center gap-2 text-sm font-semibold">
-                  <Trophy className="h-4 w-4 text-primary" />
-                  러닝 챌린지
-                </p>
-                <p className="text-xs text-muted-foreground sm:text-sm">
-                  출석·목표·기록·마일리지·회복관리 점수와 순위를 확인하세요.
-                </p>
-              </div>
-              <Button asChild className="min-h-11 w-full shrink-0 sm:w-auto">
-                <Link href={runningLeagueHref}>
-                  리그 보기
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </section>
-        ) : null
-      ) : (
+      {!isAdultMember ? (
         <>
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-4 sm:p-6">
@@ -419,7 +321,7 @@ export function MemberMyPage({
             />
           </div>
         </>
-      )}
+      ) : null}
 
       {showAdultMemberUsageSections || !isAdultMember ? (
       <Card className="border-primary/15">
@@ -518,144 +420,7 @@ export function MemberMyPage({
         </CardContent>
       </Card>
       ) : null}
-
-      <MemberCenterContactCard coach={coachContact} center={centerContact} />
     </div>
-  )
-}
-
-function MemberSummaryCardCarousel({ children }: { children: ReactNode }) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const itemCount = Children.count(children)
-
-  useEffect(() => {
-    const container = scrollRef.current
-    if (!container || itemCount === 0) return
-
-    const updateActiveIndex = () => {
-      const firstItem = container.children[0] as HTMLElement | undefined
-      if (!firstItem) return
-
-      const gapValue = getComputedStyle(container).gap.split(' ')[0]
-      const gap = Number.parseFloat(gapValue) || 10
-      const step = firstItem.offsetWidth + gap
-      if (step <= 0) return
-
-      const nextIndex = Math.round(container.scrollLeft / step)
-      setActiveIndex(Math.min(Math.max(nextIndex, 0), itemCount - 1))
-    }
-
-    updateActiveIndex()
-    container.addEventListener('scroll', updateActiveIndex, { passive: true })
-    window.addEventListener('resize', updateActiveIndex)
-
-    return () => {
-      container.removeEventListener('scroll', updateActiveIndex)
-      window.removeEventListener('resize', updateActiveIndex)
-    }
-  }, [itemCount])
-
-  function scrollToIndex(index: number) {
-    const container = scrollRef.current
-    if (!container) return
-
-    const target = container.children[index] as HTMLElement | undefined
-    target?.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'start',
-      block: 'nearest',
-    })
-  }
-
-  return (
-    <div className="space-y-2 lg:space-y-0">
-      <div
-        ref={scrollRef}
-        className={cn(
-          'flex gap-2.5 overflow-x-auto pb-0.5 pr-1 snap-x snap-mandatory',
-          '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-          'lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-visible lg:snap-none lg:pr-0',
-        )}
-      >
-        {children}
-      </div>
-
-      <div className="flex items-center justify-center gap-1.5 pt-0.5 lg:hidden">
-        {Array.from({ length: itemCount }, (_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => scrollToIndex(index)}
-            className={cn(
-              'h-1.5 rounded-full transition-all duration-200',
-              index === activeIndex
-                ? 'w-3.5 bg-zinc-400'
-                : 'w-1.5 bg-zinc-600/70',
-            )}
-            aria-label={`회원 정보 ${index + 1}번째 카드`}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function ProfileSummaryCard({
-  name,
-  sportProfile,
-  school,
-  instructorName,
-  compact = false,
-  className,
-}: {
-  name: string
-  sportProfile: string | null
-  school?: string | null
-  instructorName: string
-  compact?: boolean
-  className?: string
-}) {
-  const metaLine = [
-    sportProfile,
-    school?.trim() || null,
-    `담당 코치: ${instructorName}`,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-
-  return (
-    <Card
-      className={cn(
-        compact ? 'h-full' : 'h-full md:h-[158px]',
-        className,
-      )}
-    >
-      <CardContent
-        className={cn(
-          'grid h-full gap-0',
-          compact
-            ? 'min-h-[108px] grid-rows-[auto_1fr_auto] px-3 py-3'
-            : 'min-h-[132px] grid-rows-[auto_1fr_auto] px-3.5 py-3.5 sm:px-4 sm:py-4 md:min-h-0',
-        )}
-      >
-        <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <User className="h-3.5 w-3.5 shrink-0 opacity-70" />
-          <span className="truncate">내 정보</span>
-        </p>
-        <p
-          className={cn(
-            'flex items-center truncate font-bold leading-none',
-            compact ? 'text-xl' : 'text-2xl md:text-[26px]',
-          )}
-        >
-          {name}
-        </p>
-        <p className="line-clamp-2 text-xs leading-snug text-muted-foreground md:text-[13px]">
-          {metaLine}
-        </p>
-      </CardContent>
-    </Card>
   )
 }
 

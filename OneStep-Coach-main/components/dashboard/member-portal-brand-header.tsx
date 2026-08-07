@@ -9,7 +9,7 @@ type MemberPortalBrandHeaderProps = {
 }
 
 function buildTextStyle(
-  color: string | null,
+  color: string | null | undefined,
   size: string | null,
   weight: string | null,
 ): CSSProperties | undefined {
@@ -22,7 +22,12 @@ function buildTextStyle(
 
 export function MemberPortalBrandHeader({ brand, action }: MemberPortalBrandHeaderProps) {
   const config = brand ?? resolveAdultPortalBrand(null)
-  if (config.hidden) return null
+
+  // 브랜드 텍스트만 숨김 — 사다리/돌림판 액션은 유지
+  if (config.hidden) {
+    if (!action) return null
+    return <div className="flex justify-end">{action}</div>
+  }
 
   const eyebrowStyle = buildTextStyle(
     config.eyebrowColor,

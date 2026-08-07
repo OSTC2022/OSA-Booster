@@ -79,9 +79,9 @@ export function InstallAppButton({
       title="홈 화면에 추가"
     >
       <Download className={cn('h-4 w-4 shrink-0', showLabel && 'mr-1.5')} />
-      <span className={showLabel ? 'inline' : 'hidden sm:inline'}>
-        {canPrompt ? '홈 화면 추가' : '앱 설치'}
-      </span>
+      {showLabel ? (
+        <span className="inline">{canPrompt ? '홈 화면 추가' : '앱 설치'}</span>
+      ) : null}
     </Button>
   )
 }

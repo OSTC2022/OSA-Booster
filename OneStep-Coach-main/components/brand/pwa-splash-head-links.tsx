@@ -6,8 +6,8 @@ export function PwaSplashHeadLinks() {
       <link rel="manifest" href={`/manifest.webmanifest?v=${PWA_ASSET_VERSION}`} />
       <meta name="mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-title" content="원스텝" />
-      <meta name="application-name" content="원스텝" />
+      <meta name="apple-mobile-web-app-title" content="부스터 러닝크루" />
+      <meta name="application-name" content="부스터 러닝크루" />
       <meta name="theme-color" content="#070d18" />
       {IOS_PWA_SPLASH_SCREENS.map((screen) => (
         <link

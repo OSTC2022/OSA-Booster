@@ -52,10 +52,12 @@ export function sumMemberMileageUpToDate(
   asOfDate: string,
   recognition?: MileageRecognition | null,
 ): number {
+  const asOfKey = asOfDate.trim().slice(0, 10)
   let total = 0
   for (const log of logs) {
     if (log.member_id !== memberId) continue
-    if (log.logged_at > asOfDate) continue
+    const logKey = String(log.logged_at ?? '').trim().slice(0, 10)
+    if (!logKey || logKey > asOfKey) continue
     if (!isMileageLogRecognized(log.distance_km, recognition)) continue
     total += Number(log.distance_km ?? 0)
   }
@@ -68,9 +70,12 @@ export function sumMemberMileageOnDate(
   date: string,
   recognition?: MileageRecognition | null,
 ): number {
+  const dateKey = date.trim().slice(0, 10)
   let total = 0
   for (const log of logs) {
-    if (log.member_id !== memberId || log.logged_at !== date) continue
+    if (log.member_id !== memberId) continue
+    const logKey = String(log.logged_at ?? '').trim().slice(0, 10)
+    if (logKey !== dateKey) continue
     if (!isMileageLogRecognized(log.distance_km, recognition)) continue
     total += Number(log.distance_km ?? 0)
   }

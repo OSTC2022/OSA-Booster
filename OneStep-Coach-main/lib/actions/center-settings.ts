@@ -7,7 +7,7 @@ import {
 } from '@/lib/data/center-settings-read'
 import { createServiceRoleClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import type { CenterSettings } from '@/lib/types'
 
 const CENTER_SETTINGS_ID = 'default'
@@ -77,6 +77,14 @@ const CENTER_SETTINGS_MIGRATION_HINTS: Array<{
     sql: 'supabase/add-adult-portal-animal-tier-half.sql',
     label: '동물 등급 절반 이벤트',
   },
+  {
+    fields: [
+      'adult_portal_ranking_show_individual',
+      'adult_portal_ranking_show_team',
+    ],
+    sql: 'supabase/add-adult-portal-ranking-competition-modes.sql',
+    label: '개인전·팀전 표시',
+  },
 ]
 
 function migrationHintForUpdatedFields(updatedFields: string[]): string | null {
@@ -89,7 +97,8 @@ function migrationHintForUpdatedFields(updatedFields: string[]): string | null {
 }
 
 function revalidateCenterSettingsPaths() {
-  revalidateTag('center-settings', 'max')
+  // Next 16: revalidateTag(..., 'max')는 SWR라 저장 직후에도 이전 색/문구가 남을 수 있음
+  updateTag('center-settings')
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard/settings/adult-running-portal')
   revalidatePath('/dashboard')
@@ -144,6 +153,8 @@ export async function updateCenterSettings(formData: {
   adult_portal_animal_tier_half_enabled?: boolean
   adult_portal_animal_tier_half_start?: string | null
   adult_portal_animal_tier_half_end?: string | null
+  adult_portal_ranking_show_individual?: boolean
+  adult_portal_ranking_show_team?: boolean
 }): Promise<{ data?: CenterSettings; error?: string }> {
   const user = await requireAuth()
   const input =
@@ -272,6 +283,12 @@ export async function updateCenterSettings(formData: {
     updateData.adult_portal_animal_tier_half_end = normalizeOptionalString(
       input.adult_portal_animal_tier_half_end,
     )
+  }
+  if (input.adult_portal_ranking_show_individual !== undefined) {
+    updateData.adult_portal_ranking_show_individual = input.adult_portal_ranking_show_individual
+  }
+  if (input.adult_portal_ranking_show_team !== undefined) {
+    updateData.adult_portal_ranking_show_team = input.adult_portal_ranking_show_team
   }
 
   const updatedFields = Object.keys(updateData).filter((key) => key !== 'updated_at')

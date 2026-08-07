@@ -322,7 +322,7 @@ function ChartTooltipShell({
 
   return (
     <div className="pointer-events-auto w-max max-w-[min(14rem,82vw)] rounded-md bg-zinc-950/96 px-2 py-2 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-sm">
-      {label ? <p className="mb-1.5 shrink-0 font-medium text-lime-200">{label}</p> : null}
+      {label ? <p className="mb-1.5 shrink-0 font-medium text-orange-200">{label}</p> : null}
       <div
         className={cn('space-y-1 text-zinc-300', SCROLLABLE_TOOLTIP_LIST_CLASS)}
         onWheel={handleTooltipListWheel}
@@ -346,7 +346,7 @@ function RecordChartTooltip({
     <ChartTooltipShell label={data.chartLabel}>
       <p>
         <span className="text-zinc-500">누적 PB </span>
-        <span className="font-semibold tabular-nums text-lime-300">{data.timeText}</span>
+        <span className="font-semibold tabular-nums text-orange-300">{data.timeText}</span>
       </p>
       <p>
         <span className="text-zinc-500">측정 </span>
@@ -355,7 +355,7 @@ function RecordChartTooltip({
       {data.rank != null ? (
         <p>
           <span className="text-zinc-500">순위 </span>
-          <span className="font-medium text-lime-200">{data.rank}위</span>
+          <span className="font-medium text-orange-200">{data.rank}위</span>
         </p>
       ) : null}
     </ChartTooltipShell>
@@ -609,7 +609,7 @@ function MileageChartTooltip({
     <ChartTooltipShell label={label}>
       <p>
         <span className="text-zinc-500">누적 </span>
-        <span className="font-semibold tabular-nums text-lime-300">{cumulative.toFixed(1)}km</span>
+        <span className="font-semibold tabular-nums text-orange-300">{cumulative.toFixed(1)}km</span>
       </p>
       {daily != null ? (
         <p>
@@ -633,7 +633,7 @@ function GraphEmptyState({
   return (
     <div
       className={cn(
-        'rounded-xl border border-dashed border-lime-500/25 bg-zinc-950/60 text-center',
+        'rounded-xl border border-dashed border-orange-500/25 bg-zinc-950/60 text-center',
         compact ? 'px-3 py-4' : 'px-4 py-6',
         className,
       )}
@@ -655,7 +655,7 @@ function GraphEmptyState({
 
 type GraphChartTab = 'rank' | 'record' | 'mileage' | 'chase'
 
-export type GraphChartMode = 'pb' | 'mileage' | 'attendance' | 'chase'
+export type GraphChartMode = 'pb' | 'mileage' | 'team' | 'attendance' | 'chase'
 
 export type { GraphChartTab }
 
@@ -708,7 +708,7 @@ function GraphChartTabs({
             className={cn(
               'min-h-8 rounded-md px-0.5 text-[10px] font-medium leading-tight transition-colors',
               value === tab.value
-                ? 'bg-lime-500/15 text-lime-100'
+                ? 'bg-orange-500/15 text-orange-100'
                 : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-300',
             )}
           >
@@ -731,7 +731,7 @@ function GraphChartTabs({
           className={cn(
             'min-h-9 shrink-0 rounded-full px-3.5 py-1.5 text-sm transition-colors',
             value === tab.value
-              ? 'bg-lime-500/15 font-medium text-lime-100'
+              ? 'bg-orange-500/15 font-medium text-orange-100'
               : 'bg-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200',
           )}
         >
@@ -817,7 +817,7 @@ export function MemberRankingCharts({
   onActiveTabChange,
   chaseMemberId = null,
 }: MemberRankingChartsProps) {
-  const isMileageLikeMode = mode === 'mileage' || mode === 'chase'
+  const isMileageLikeMode = mode === 'mileage' || mode === 'chase' || mode === 'team'
   const [internalTab, setInternalTab] = useState<GraphChartTab>(() =>
     graphChartTabForRankingView(mode),
   )
@@ -900,8 +900,8 @@ export function MemberRankingCharts({
       : cn(
           'rounded-xl border bg-zinc-950/80 p-3',
           emphasized
-            ? 'border-lime-400/40 shadow-[0_0_24px_rgba(163,230,53,0.1)]'
-            : 'border-lime-500/20',
+            ? 'border-orange-400/40 shadow-[0_0_24px_rgba(255, 106, 42,0.1)]'
+            : 'border-orange-500/20',
         ),
   )
 
@@ -1113,11 +1113,11 @@ function MileageRankTrendChart({
   return (
     <div className={chartShellClass}>
       {!compact ? (
-        <p className="mb-2 text-xs font-medium text-lime-300">이번 달 마일리지 순위</p>
+        <p className="mb-2 text-xs font-medium text-orange-300">이번 달 마일리지 순위</p>
       ) : null}
       <ChartContainer config={rankChartConfig} className={chartAxisClass}>
         <LineChart data={data} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis
             dataKey="chartLabel"
             tickLine={false}
@@ -1160,11 +1160,11 @@ function MileageRecordTrendChart({
   return (
     <div className={chartShellClass}>
       {!compact ? (
-        <p className="mb-2 text-xs font-medium text-lime-300">이번 달 누적 마일리지</p>
+        <p className="mb-2 text-xs font-medium text-orange-300">이번 달 누적 마일리지</p>
       ) : null}
       <ChartContainer config={mileageChartConfig} className={chartAxisClass}>
         <LineChart data={data} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis
             dataKey="chartLabel"
             tickLine={false}
@@ -1207,11 +1207,11 @@ function AttendanceRankTrendChart({
   return (
     <div className={chartShellClass}>
       {!compact ? (
-        <p className="mb-2 text-xs font-medium text-lime-300">출석 순위</p>
+        <p className="mb-2 text-xs font-medium text-orange-300">출석 순위</p>
       ) : null}
       <ChartContainer config={rankChartConfig} className={chartAxisClass}>
         <LineChart data={data} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis
             dataKey="chartLabel"
             tickLine={false}
@@ -1254,11 +1254,11 @@ function AttendanceRecordTrendChart({
   return (
     <div className={chartShellClass}>
       {!compact ? (
-        <p className="mb-2 text-xs font-medium text-lime-300">누적 출석일</p>
+        <p className="mb-2 text-xs font-medium text-orange-300">누적 출석일</p>
       ) : null}
       <ChartContainer config={attendanceChartConfig} className={chartAxisClass}>
         <LineChart data={data} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis
             dataKey="chartLabel"
             tickLine={false}
@@ -1319,11 +1319,11 @@ function AttendanceAggregateTrendChart({
   return (
     <div className={chartShellClass}>
       {!compact ? (
-        <p className="mb-2 text-xs font-medium text-lime-300">전체 회원 출석 추이</p>
+        <p className="mb-2 text-xs font-medium text-orange-300">전체 회원 출석 추이</p>
       ) : null}
       <ChartContainer config={attendanceChartConfig} className={chartAxisClass}>
         <LineChart data={chart.rows} margin={aggregateComparisonChartMargin(compact)}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis {...AGGREGATE_COMPARISON_X_AXIS_PROPS} />
           <YAxis tickLine={false} axisLine={false} width={36} allowDecimals={false} tickFormatter={(v) => `${v}일`} />
           <Tooltip
@@ -1415,14 +1415,14 @@ function RankTrendChart({
     <div className={chartShellClass}>
       {!compact ? (
         <div className="mb-2 space-y-1">
-          <p className="text-xs font-medium text-lime-300">
+          <p className="text-xs font-medium text-orange-300">
             {isAggregate ? '전체 회원 순위' : '순위'}
           </p>
           {rankCaption && !isAggregate ? (
             <>
               <p className="text-[11px] text-zinc-500">{rankCaption.title}</p>
               {rankCaption.trajectory ? (
-                <p className="text-xs font-medium text-lime-200/90">{rankCaption.trajectory}</p>
+                <p className="text-xs font-medium text-orange-200/90">{rankCaption.trajectory}</p>
               ) : null}
             </>
           ) : null}
@@ -1437,7 +1437,7 @@ function RankTrendChart({
               isAggregate ? aggregateComparisonChartMargin(compact) : { left: 4, right: 8, top: 8, bottom: 0 }
             }
           >
-            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
             <XAxis
               {...AGGREGATE_COMPARISON_X_AXIS_PROPS}
             />
@@ -1524,7 +1524,7 @@ function RankTrendChart({
       ) : (
         <ChartContainer config={rankChartConfig} className={chartAxisClass}>
           <LineChart data={rankData} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
             <XAxis
               dataKey="chartLabel"
               tickLine={false}
@@ -1582,12 +1582,12 @@ function PbRecordAggregateTrendChart({
 
   return (
     <div className={chartShellClass}>
-      <p className={cn('font-medium text-lime-300', compact ? 'mb-1 text-xs' : 'mb-2 text-xs')}>
+      <p className={cn('font-medium text-orange-300', compact ? 'mb-1 text-xs' : 'mb-2 text-xs')}>
         {compact ? '기록 추이' : '전체 회원 PB 기록 추이'}
       </p>
       <ChartContainer config={timeChartConfig} className={chartAxisClass}>
         <LineChart data={chart.rows} margin={aggregateComparisonChartMargin(compact)}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis {...AGGREGATE_COMPARISON_X_AXIS_PROPS} />
           <YAxis
             tickLine={false}
@@ -1661,11 +1661,11 @@ function MileageAggregateTrendChart({
   return (
     <div className={chartShellClass}>
       {!compact ? (
-        <p className="mb-2 text-xs font-medium text-lime-300">전체 회원 누적 마일리지</p>
+        <p className="mb-2 text-xs font-medium text-orange-300">전체 회원 누적 마일리지</p>
       ) : null}
       <ChartContainer config={mileageChartConfig} className={chartAxisClass}>
         <LineChart data={chart.rows} margin={aggregateComparisonChartMargin(compact)}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis {...AGGREGATE_COMPARISON_X_AXIS_PROPS} />
           <YAxis tickLine={false} axisLine={false} width={44} tickFormatter={(v) => `${v}km`} />
           <Tooltip
@@ -1728,18 +1728,18 @@ function RecordTrendChart({
     <div className={chartShellClass}>
       {!compact ? (
         <div className="mb-2 space-y-1">
-          <p className="text-xs font-medium text-lime-300">기록</p>
+          <p className="text-xs font-medium text-orange-300">기록</p>
           {recordSummary?.timeTrajectory ? (
-            <p className="text-xs font-medium text-lime-100/90">{recordSummary.timeTrajectory}</p>
+            <p className="text-xs font-medium text-orange-100/90">{recordSummary.timeTrajectory}</p>
           ) : null}
           <div className="flex flex-wrap gap-2 pt-0.5">
             {recordSummary?.vsMonthStart ? (
-              <span className="rounded-full border border-lime-500/25 bg-lime-500/10 px-2.5 py-0.5 text-[11px] font-medium text-lime-200">
+              <span className="rounded-full border border-orange-500/25 bg-orange-500/10 px-2.5 py-0.5 text-[11px] font-medium text-orange-200">
                 {recordSummary.vsMonthStart}
               </span>
             ) : null}
             {recordSummary?.vsSeasonStart ? (
-              <span className="rounded-full border border-lime-500/15 bg-black/40 px-2.5 py-0.5 text-[11px] font-medium text-zinc-300">
+              <span className="rounded-full border border-orange-500/15 bg-black/40 px-2.5 py-0.5 text-[11px] font-medium text-zinc-300">
                 {recordSummary.vsSeasonStart}
               </span>
             ) : null}
@@ -1749,7 +1749,7 @@ function RecordTrendChart({
 
       <ChartContainer config={timeChartConfig} className={chartAxisClass}>
         <LineChart data={timeData} margin={{ left: 4, right: 8, top: 8, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-lime-500/10" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-orange-500/10" />
           <XAxis
             dataKey="chartLabel"
             tickLine={false}

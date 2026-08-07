@@ -6,8 +6,8 @@ export const DEFAULT_ADULT_PORTAL_BRAND_TITLE = '내 러닝 포털'
 export type AdultPortalBrandConfig = {
   eyebrow: string
   title: string
-  eyebrowColor: string | null
-  titleColor: string | null
+  eyebrowColor: string
+  titleColor: string
   eyebrowSize: string | null
   titleSize: string | null
   eyebrowWeight: string | null
@@ -55,6 +55,9 @@ function normalizeHexColor(value: unknown): string | null {
   return null
 }
 
+export const DEFAULT_ADULT_PORTAL_BRAND_EYEBROW_COLOR = '#a3e635'
+export const DEFAULT_ADULT_PORTAL_BRAND_TITLE_COLOR = '#fafafa'
+
 export function resolveAdultPortalBrand(
   settings?: Pick<
     CenterSettings,
@@ -72,8 +75,12 @@ export function resolveAdultPortalBrand(
   return {
     eyebrow: settings?.adult_portal_brand_eyebrow?.trim() || RUNNING_LEAGUE_EN,
     title: settings?.adult_portal_brand_title?.trim() || DEFAULT_ADULT_PORTAL_BRAND_TITLE,
-    eyebrowColor: normalizeHexColor(settings?.adult_portal_brand_eyebrow_color),
-    titleColor: normalizeHexColor(settings?.adult_portal_brand_title_color),
+    eyebrowColor:
+      normalizeHexColor(settings?.adult_portal_brand_eyebrow_color) ??
+      DEFAULT_ADULT_PORTAL_BRAND_EYEBROW_COLOR,
+    titleColor:
+      normalizeHexColor(settings?.adult_portal_brand_title_color) ??
+      DEFAULT_ADULT_PORTAL_BRAND_TITLE_COLOR,
     eyebrowSize: normalizeOptionalText(settings?.adult_portal_brand_eyebrow_size),
     titleSize: normalizeOptionalText(settings?.adult_portal_brand_title_size),
     eyebrowWeight: normalizeOptionalText(settings?.adult_portal_brand_eyebrow_weight),

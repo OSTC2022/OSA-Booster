@@ -5,9 +5,11 @@ export const BRAND_PULSE_CIRCLE = { cx: 12, cy: 12, r: 9 } as const
 
 export const BRAND_PULSE_STROKE_WIDTH = 1.9
 
-export const BRAND_PULSE_GREEN = '#AAFF00' as const
-export const BRAND_PULSE_APP_BG_INNER = '#1a1d1a' as const
-export const BRAND_PULSE_APP_BG_OUTER = '#101310' as const
+export const BRAND_PULSE_ORANGE = '#ff6a2a' as const
+/** @deprecated use BRAND_PULSE_ORANGE */
+export const BRAND_PULSE_GREEN = BRAND_PULSE_ORANGE
+export const BRAND_PULSE_APP_BG_INNER = '#121826' as const
+export const BRAND_PULSE_APP_BG_OUTER = '#090b12' as const
 export const BRAND_PULSE_APP_SYMBOL_SCALE = 0.52
 
 /** Top & bottom arcs — pulse line completes the horizontal diameter */
@@ -62,7 +64,7 @@ export function buildBrandPulseAppIconSvg(options?: {
   symbolScale?: number
 }) {
   const size = options?.size ?? 100
-  const stroke = options?.stroke ?? BRAND_PULSE_GREEN
+  const stroke = options?.stroke ?? BRAND_PULSE_ORANGE
   const strokeWidth = options?.strokeWidth ?? BRAND_PULSE_STROKE_WIDTH
   const cornerRadius = options?.cornerRadius ?? size * 0.22
   const symbolScale = options?.symbolScale ?? BRAND_PULSE_APP_SYMBOL_SCALE

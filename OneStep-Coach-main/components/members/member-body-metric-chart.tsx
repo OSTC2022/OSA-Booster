@@ -38,7 +38,7 @@ const chartConfig = {
     label: '지표',
     theme: {
       light: '#84cc16',
-      dark: '#AAFF00',
+      dark: '#ff6a2a',
     },
   },
 }

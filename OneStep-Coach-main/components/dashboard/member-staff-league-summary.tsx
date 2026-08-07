@@ -58,8 +58,8 @@ export function MemberStaffLeagueSummary({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-lime-200/90">러닝 리그 요약</p>
-        <Button asChild variant="outline" size="sm" className="border-lime-500/30 text-lime-100">
+        <p className="text-sm font-semibold text-orange-200/90">러닝 리그 요약</p>
+        <Button asChild variant="outline" size="sm" className="border-orange-500/30 text-orange-100">
           <Link href={runningPortalHref}>
             러닝 포털 전체 보기
             <ChevronRight className="ml-1 h-4 w-4" />
@@ -73,7 +73,7 @@ export function MemberStaffLeagueSummary({
         <div className="flex flex-col gap-1.5">
           <Button
             type="button"
-            className="min-h-12 w-full bg-lime-500 text-base font-bold text-black hover:bg-lime-400"
+            className="min-h-12 w-full bg-orange-500 text-base font-bold text-black hover:bg-orange-400"
             onClick={() => setMileageDialogOpen(true)}
           >
             <Plus className="mr-1.5 h-5 w-5" />
@@ -83,7 +83,7 @@ export function MemberStaffLeagueSummary({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-9 text-xs text-zinc-400 hover:text-lime-200"
+            className="h-9 text-xs text-zinc-400 hover:text-orange-200"
             onClick={() => setPbDialogOpen(true)}
           >
             PB 등록

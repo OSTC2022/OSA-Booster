@@ -3,6 +3,7 @@ import { getMemberPortalDataForStaff } from '@/lib/actions/member-portal'
 import { getCenterRunningTrainingScheduleForMember } from '@/lib/actions/center-running-training-schedule'
 import { getMemberRunningLeagueHomeForStaff } from '@/lib/actions/running-league'
 import { getCenterSettings } from '@/lib/actions/center-settings'
+import { getCenterBoardPostsForAdmin } from '@/lib/actions/center-board'
 import { getMemberLinkedProfileRole } from '@/lib/actions/member-account'
 import { resolveAdultPortalBrand } from '@/lib/adult-portal-brand'
 import { requireMemberViewer } from '@/lib/auth/member-access'
@@ -22,12 +23,14 @@ export default async function MemberRunningPortalPreviewPage({
   const linkedRole = await getMemberLinkedProfileRole(id)
   if (linkedRole !== 'adult_member') notFound()
 
-  const [data, runningLeagueHome, centerTrainingSchedule, centerSettings] = await Promise.all([
-    getMemberPortalDataForStaff(id),
-    getMemberRunningLeagueHomeForStaff(id),
-    getCenterRunningTrainingScheduleForMember(),
-    getCenterSettings(),
-  ])
+  const [data, runningLeagueHome, centerTrainingSchedule, centerSettings, noticeBoardPosts] =
+    await Promise.all([
+      getMemberPortalDataForStaff(id),
+      getMemberRunningLeagueHomeForStaff(id),
+      getCenterRunningTrainingScheduleForMember(),
+      getCenterSettings(),
+      getCenterBoardPostsForAdmin('notice', 'adult'),
+    ])
 
   if (!data) notFound()
 
@@ -48,6 +51,7 @@ export default async function MemberRunningPortalPreviewPage({
         adultPortalBlindMemberUsage={centerSettings.adult_portal_blind_member_usage ?? false}
         adultPortalBrand={resolveAdultPortalBrand(centerSettings)}
         adultPortalNotice={centerSettings.adult_portal_notice}
+        noticeBoardPosts={noticeBoardPosts.filter((post) => post.is_published)}
       />
     </div>
   )

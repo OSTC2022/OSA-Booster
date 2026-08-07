@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -21,6 +22,8 @@ import { MemberBackupHeaderMenu } from '@/components/dashboard/member-backup-hea
 import { UserAvatar } from '@/components/dashboard/user-avatar'
 import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { ShareWebsiteButton } from '@/components/pwa/share-website-button'
+import { BrandPulseAppIcon } from '@/components/brand/brand-pulse-mark'
+import { MemberCenterContactDialog } from '@/components/members/member-center-contact-dialog'
 
 interface DashboardHeaderProps {
   user: User | null
@@ -28,6 +31,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
   const router = useRouter()
+  const [centerContactOpen, setCenterContactOpen] = useState(false)
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -39,17 +43,27 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-border bg-background px-4 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background px-4 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60 sm:gap-3">
         <SidebarTrigger className="-ml-1" />
 
         <div className="flex-1" />
 
+        {/* 알림 > 링크 > 앱설치 > 원스텝심볼 > 프로필 */}
         {user ? <NotificationBell userId={user.id} /> : null}
-
         <ShareWebsiteButton />
-
+        <InstallAppButton showLabel={false} size="icon" className="h-9 w-9 shrink-0" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          aria-label="코치 & 센터 연락"
+          title="코치 & 센터 연락"
+          onClick={() => setCenterContactOpen(true)}
+        >
+          <BrandPulseAppIcon className="h-7 w-7" glow />
+        </Button>
         {user?.role === 'admin' ? <MemberBackupHeaderMenu /> : null}
-        <InstallAppButton showLabel className="shrink-0" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -86,6 +100,10 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
+      <MemberCenterContactDialog
+        open={centerContactOpen}
+        onOpenChange={setCenterContactOpen}
+      />
     </>
   )
 }

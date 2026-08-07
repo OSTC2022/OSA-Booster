@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -722,7 +722,7 @@ export function MemberMileageLogCard({
           <span>월 누적 마일리지</span>
         </div>
 
-        <p className={cn('font-bold text-lime-400', embedded ? 'text-2xl' : 'text-3xl')}>
+        <p className={cn('font-bold text-orange-400', embedded ? 'text-2xl' : 'text-3xl')}>
           {mileageKm.toFixed(1)}km
         </p>
         <p className="text-xs text-muted-foreground">

@@ -111,7 +111,7 @@ export function AdultPortalRankingPeriodSettingsPanel({
           </div>
         </div>
 
-        <div className="rounded-lg border border-dashed border-lime-500/25 bg-lime-500/5 px-3 py-2.5 text-sm">
+        <div className="rounded-lg border border-dashed border-orange-500/25 bg-orange-500/5 px-3 py-2.5 text-sm">
           <p className="font-medium text-foreground">미리보기: {previewPeriod.label}</p>
           <p className="mt-1 text-xs text-muted-foreground">{previewPeriod.resetHint}</p>
         </div>

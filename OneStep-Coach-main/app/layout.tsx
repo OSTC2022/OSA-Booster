@@ -22,34 +22,34 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: '원스텝',
-    template: '%s · 원스텝',
+    default: '부스터 러닝크루',
+    template: '%s · 부스터 러닝크루',
   },
-  description: '회원, 수업, 출석 관리를 위한 OneStep Training Center',
-  applicationName: '원스텝',
+  description: 'Booster Running Crew — 러닝 크루 포털',
+  applicationName: '부스터 러닝크루',
   appleWebApp: {
     capable: true,
-    title: '원스텝',
+    title: '부스터 러닝크루',
     statusBarStyle: 'black-translucent',
   },
   formatDetection: {
     telephone: false,
   },
-    icons: {
+  icons: {
     icon: [
-      { url: '/icons/icon-32.png?v=17', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon.ico?v=17', sizes: '48x48' },
-      { url: '/icons/icon-192.png?v=17', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512.png?v=17', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/icon-32.png?v=19', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.ico?v=19', sizes: '48x48' },
+      { url: '/icons/icon-192.png?v=19', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png?v=19', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/icons/apple-icon.png?v=17', sizes: '180x180', type: 'image/png' },
+      { url: '/icons/apple-icon.png?v=19', sizes: '180x180', type: 'image/png' },
     ],
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#070d18',
+  themeColor: '#090b12',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -66,7 +66,7 @@ export default function RootLayout({
     <html
       lang="ko"
       suppressHydrationWarning
-      className={`dark bg-[#070d18] ${geistSans.variable} ${geistMono.variable}`}
+      className={`dark bg-[#090b12] ${geistSans.variable} ${geistMono.variable}`}
     >
       <head>
         <PwaSplashHeadLinks />
@@ -76,14 +76,14 @@ export default function RootLayout({
         <style
           dangerouslySetInnerHTML={{
             __html:
-              'html,body{background:#070d18!important;margin:0;padding:0}' +
+              'html,body{background:#090b12!important;margin:0;padding:0}' +
               'html.onestep-splash-active,html.onestep-splash-active body{overflow:hidden;position:fixed;inset:0;width:100%;height:100%;height:100dvh;overscroll-behavior:none}' +
               '#onestep-app-splash{position:fixed;inset:0;z-index:9999;width:100%;height:100%;height:100dvh;min-height:100dvh;min-height:-webkit-fill-available;opacity:1}',
           }}
         />
       </head>
       <body
-        className={`${geistSans.className} antialiased bg-[#070d18] text-foreground min-h-screen`}
+        className={`${geistSans.className} antialiased bg-[#090b12] text-foreground min-h-screen`}
       >
         <OnestepSplashLayer />
         <PwaBootstrap />

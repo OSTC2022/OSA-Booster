@@ -4,12 +4,13 @@ import { MemberRunningLeagueRankings } from '@/components/dashboard/member-runni
 import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-brand-header'
 import { AttendanceRouletteWheel } from '@/components/dashboard/attendance-roulette-wheel'
 import { ChaseLadderGame } from '@/components/dashboard/chase-ladder-game'
-import { MemberRunningLeagueTrainingSchedule } from '@/components/dashboard/member-running-league-training-schedule'
-import { MemberPortalNoticePanel } from '@/components/dashboard/member-portal-notice-panel'
+import { MemberPortalInfoAccordion } from '@/components/dashboard/member-portal-info-accordion'
 import type { MemberRunningLeagueHome } from '@/lib/actions/running-league'
 import type { CenterRunningTrainingScheduleBundle } from '@/lib/actions/center-running-training-schedule'
 import { resolveAdultPortalBrand } from '@/lib/adult-portal-brand'
-import type { CenterSettings } from '@/lib/types'
+import type { AdultPortalBrandConfig } from '@/lib/adult-portal-brand'
+import type { PortalMarathonRaceView } from '@/lib/portal-marathon-races'
+import type { CenterBoardPost } from '@/lib/types'
 import { MEMBER_PORTAL_SHELL_CLASS } from '@/lib/running-league/member-portal-layout'
 import { cn } from '@/lib/utils'
 
@@ -19,18 +20,10 @@ type AdultRunningPortalAdminViewProps = {
   chaseMemberId?: string | null
   chaseLabel?: string | null
   adultPortalNotice?: string | null
-  adultPortalBrand?: Pick<
-    CenterSettings,
-    | 'adult_portal_brand_eyebrow'
-    | 'adult_portal_brand_title'
-    | 'adult_portal_brand_eyebrow_color'
-    | 'adult_portal_brand_title_color'
-    | 'adult_portal_brand_eyebrow_size'
-    | 'adult_portal_brand_title_size'
-    | 'adult_portal_brand_eyebrow_weight'
-    | 'adult_portal_brand_title_weight'
-    | 'adult_portal_brand_hidden'
-  > | null
+  noticeBoardPosts?: CenterBoardPost[]
+  adultPortalBrand?: AdultPortalBrandConfig | null
+  marathonRaces?: PortalMarathonRaceView[]
+  marathonTableReady?: boolean
 }
 
 export function AdultRunningPortalAdminView({
@@ -39,9 +32,12 @@ export function AdultRunningPortalAdminView({
   chaseMemberId = null,
   chaseLabel = null,
   adultPortalNotice = null,
+  noticeBoardPosts = [],
   adultPortalBrand = null,
+  marathonRaces = [],
+  marathonTableReady = true,
 }: AdultRunningPortalAdminViewProps) {
-  const portalBrand = resolveAdultPortalBrand(adultPortalBrand)
+  const portalBrand = adultPortalBrand ?? resolveAdultPortalBrand(null)
   const trainingScheduleDays = centerTrainingSchedule.days ?? []
   const trainingScheduleReady = centerTrainingSchedule.tableReady ?? true
   const resolvedChaseMemberId =
@@ -54,29 +50,29 @@ export function AdultRunningPortalAdminView({
         <MemberPortalBrandHeader
           brand={portalBrand}
           action={
-            runningLeagueHome.rankingBundle ? (
-              <div className="flex items-center gap-1.5">
-                <ChaseLadderGame
-                  rankingBundle={runningLeagueHome.rankingBundle}
-                  chaseMemberId={resolvedChaseMemberId}
-                  chaseLabel={resolvedChaseLabel}
-                  canManageExclusions
-                />
-                <AttendanceRouletteWheel
-                  rankingBundle={runningLeagueHome.rankingBundle}
-                  canSpin
-                />
-              </div>
-            ) : null
+            <div className="flex items-center gap-1.5">
+              <ChaseLadderGame
+                rankingBundle={runningLeagueHome.rankingBundle}
+                chaseMemberId={resolvedChaseMemberId}
+                chaseLabel={resolvedChaseLabel}
+                canManageExclusions
+              />
+              <AttendanceRouletteWheel
+                rankingBundle={runningLeagueHome.rankingBundle}
+                canSpin
+              />
+            </div>
           }
         />
-        <MemberPortalNoticePanel notice={adultPortalNotice} />
-        <MemberRunningLeagueTrainingSchedule
-          days={trainingScheduleDays}
-          tableReady={trainingScheduleReady}
+        <MemberPortalInfoAccordion
+          notice={adultPortalNotice}
+          boardPosts={noticeBoardPosts}
+          trainingDays={trainingScheduleDays}
+          trainingTableReady={trainingScheduleReady}
+          marathonRaces={marathonRaces}
+          marathonTableReady={marathonTableReady}
           canParticipate={false}
           readOnly
-          embedded
         />
         <MemberRunningLeagueRankings
           pb5kLeaderboard={runningLeagueHome.pb5kLeaderboard}

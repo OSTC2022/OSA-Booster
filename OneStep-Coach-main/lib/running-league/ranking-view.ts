@@ -1,18 +1,20 @@
 import { formatCurrentMonthRankingLabel } from '@/lib/running-league/month-range'
 
-export type RankingView = 'mileage' | 'attendance' | 'chase' | 'pb'
+export type RankingView = 'mileage' | 'team' | 'attendance' | 'chase' | 'pb'
 
 export const RANKING_VIEW_OPTIONS: Array<{ value: RankingView; label: string }> = [
   { value: 'mileage', label: '월 마일리지' },
   { value: 'attendance', label: '출석' },
   { value: 'chase', label: '이겨라' },
   { value: 'pb', label: '순위(PB)' },
+  { value: 'team', label: '팀전' },
 ]
 
 export function getRankingViewShortLabel(view: RankingView): string {
   if (view === 'pb') return '순위(PB)'
   if (view === 'attendance') return '출석'
   if (view === 'chase') return '이겨라'
+  if (view === 'team') return '팀전'
   return '마일리지'
 }
 
@@ -28,6 +30,9 @@ export function getRankingViewDescription(
   }
   if (view === 'chase') {
     return `${periodLabel} 마일리지로 술래를 이긴 회원 · 추첨 상품 후보`
+  }
+  if (view === 'team') {
+    return `${periodLabel} 팀 합산 마일리지 · 멤버별 거리 공개 · 많을수록 상위`
   }
   return `${periodLabel} 누적 거리 · 많을수록 상위 (내림차순)`
 }

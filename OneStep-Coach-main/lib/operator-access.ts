@@ -39,6 +39,8 @@ const OPERATOR_SETTINGS_PATHS = [
   '/dashboard/settings/running-schedule',
   '/dashboard/settings/center-board',
   '/dashboard/settings/adult-center-board',
+  '/dashboard/settings/operator-contact',
+  '/dashboard/settings/hall-of-fame',
 ] as const
 
 export function canOperatorAccessPath(pathname: string): boolean {
@@ -54,6 +56,8 @@ const OPERATOR_SETTINGS_NAV_HREFS = new Set<string>([
   '/dashboard/settings/running-schedule',
   '/dashboard/settings/center-board',
   '/dashboard/settings/adult-center-board',
+  '/dashboard/settings/operator-contact',
+  '/dashboard/settings/hall-of-fame',
 ])
 
 export function isOperatorSettingsNavHref(href: string): boolean {
@@ -81,6 +85,8 @@ const OPERATOR_CENTER_SETTINGS_FIELDS = new Set([
   'adult_portal_animal_tier_half_enabled',
   'adult_portal_animal_tier_half_start',
   'adult_portal_animal_tier_half_end',
+  'adult_portal_ranking_show_individual',
+  'adult_portal_ranking_show_team',
 ])
 
 export function filterCenterSettingsForOperator<T extends Record<string, unknown>>(

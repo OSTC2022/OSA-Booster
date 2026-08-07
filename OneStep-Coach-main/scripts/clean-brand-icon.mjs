@@ -1,11 +1,12 @@
 import sharp from 'sharp'
-import { copyFile, mkdir } from 'node:fs/promises'
+import { copyFile, mkdir, access } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
-const source = path.join(root, 'public/brand-pulse-source.png')
+const pulseSource = path.join(root, 'public/brand-pulse-source.png')
+const mascotSvg = path.join(root, 'public/brand/booster-mascot-icon.svg')
 const iconsDir = path.join(root, 'public/icons')
 const imagesDir = path.join(root, 'public/images')
 const appDir = path.join(root, 'app')
@@ -16,8 +17,8 @@ const EXPORT_SIZE = 1024
 const SOURCE_UPSCALE = 2048
 
 /** Home-screen / PWA icon canvas — matches app theme */
-const APP_BG = '#070d18'
-const NEON = { r: 170, g: 255, b: 0 }
+const APP_BG = '#090b12'
+const NEON = { r: 255, g: 106, b: 42 }
 
 function lum(r, g, b) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -28,8 +29,17 @@ function isNeonStroke(r, g, b) {
   return greenness > 18 && g > 50
 }
 
+async function fileExists(filePath) {
+  try {
+    await access(filePath)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function loadUpscaledSourceRaw() {
-  const upscaled = await sharp(source)
+  const upscaled = await sharp(pulseSource)
     .resize(SOURCE_UPSCALE, SOURCE_UPSCALE, {
       fit: 'contain',
       background: { r: 0, g: 0, b: 0, alpha: 0 },
@@ -79,10 +89,8 @@ async function buildTransparentSymbolBuffer() {
 }
 
 /** Trim → square canvas (비율 유지) */
-async function buildBalancedSquareSymbol() {
-  const trimmed = await buildTransparentSymbolBuffer().then((img) =>
-    img.trim({ threshold: 2 }).png().toBuffer(),
-  )
+async function buildBalancedSquareSymbol(sourceImage) {
+  const trimmed = await sourceImage.trim({ threshold: 2 }).png().toBuffer()
 
   const { width = 1, height = 1 } = await sharp(trimmed).metadata()
   const side = Math.max(width, height)
@@ -110,10 +118,26 @@ async function buildBalancedSquareSymbol() {
 await mkdir(iconsDir, { recursive: true })
 await mkdir(imagesDir, { recursive: true })
 
-const symbolBuffer = await buildBalancedSquareSymbol()
-await sharp(symbolBuffer).toFile(uiIcon)
+/** UI 펄스 아이콘 (기존) */
+if (await fileExists(pulseSource)) {
+  const pulseBuffer = await buildBalancedSquareSymbol(await buildTransparentSymbolBuffer())
+  await sharp(pulseBuffer).toFile(uiIcon)
+  console.log(`Wrote ${EXPORT_SIZE}px brand-pulse-icon.png`)
+}
 
-console.log(`Wrote ${EXPORT_SIZE}px brand-pulse-icon.png`)
+/** 홈 화면 / PWA — 부스터 마스코트 */
+const mascotRaster = await sharp(mascotSvg)
+  .resize(SOURCE_UPSCALE, SOURCE_UPSCALE, {
+    fit: 'contain',
+    background: { r: 0, g: 0, b: 0, alpha: 0 },
+    kernel: sharp.kernel.lanczos3,
+  })
+  .ensureAlpha()
+  .png()
+  .toBuffer()
+
+const symbolBuffer = await buildBalancedSquareSymbol(sharp(mascotRaster))
+console.log(`Wrote mascot symbol from ${path.relative(root, mascotSvg)}`)
 
 async function renderHomeIcon(size, logoScale) {
   const logoSize = Math.round(size * logoScale)
@@ -143,12 +167,12 @@ async function renderHomeIcon(size, logoScale) {
 }
 
 const homeIcons = [
-  { name: 'icon-32.png', size: 32, scale: 0.84 },
-  { name: 'icon-180.png', size: 180, scale: 0.82 },
-  { name: 'apple-icon.png', size: 180, scale: 0.82 },
-  { name: 'icon-192.png', size: 192, scale: 0.82 },
-  { name: 'icon-512.png', size: 512, scale: 0.82 },
-  { name: 'icon-512-maskable.png', size: 512, scale: 0.7 },
+  { name: 'icon-32.png', size: 32, scale: 0.92 },
+  { name: 'icon-180.png', size: 180, scale: 0.9 },
+  { name: 'apple-icon.png', size: 180, scale: 0.9 },
+  { name: 'icon-192.png', size: 192, scale: 0.9 },
+  { name: 'icon-512.png', size: 512, scale: 0.9 },
+  { name: 'icon-512-maskable.png', size: 512, scale: 0.78 },
 ]
 
 for (const { name, size, scale } of homeIcons) {
@@ -158,9 +182,27 @@ for (const { name, size, scale } of homeIcons) {
 
 await copyFile(path.join(iconsDir, 'icon-512.png'), path.join(appDir, 'icon.png'))
 await copyFile(path.join(iconsDir, 'apple-icon.png'), path.join(appDir, 'apple-icon.png'))
-await sharp(await renderHomeIcon(32, 0.84)).toFile(path.join(root, 'public/favicon.ico'))
 
-const ogSize = 320
+/** 브라우저 탭 파비콘 — 주황 펄스 (홈화면 마스코트와 별도) */
+const pulseFaviconSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="${APP_BG}"/>
+  <g transform="translate(8,8) scale(2)" fill="none" stroke="#ff6a2a" stroke-width="1.9" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M3 12A9 9 0 0 1 21 12"/>
+    <path d="M3 12A9 9 0 0 0 21 12"/>
+    <path d="M3 12H6.25L7.1 6L8.65 12L12 18.5L15.35 9.5L16.9 12H21"/>
+  </g>
+</svg>`
+
+const pulseFavicon32 = await sharp(Buffer.from(pulseFaviconSvg))
+  .resize(32, 32)
+  .png()
+  .toBuffer()
+await sharp(pulseFavicon32).toFile(path.join(iconsDir, 'icon-32.png'))
+await sharp(pulseFavicon32).toFile(path.join(root, 'public/favicon.ico'))
+console.log('Wrote orange pulse favicon (icon-32.png, favicon.ico)')
+
+const ogSize = 420
 const ogLogo = await sharp(symbolBuffer)
   .resize(ogSize, ogSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .png()
@@ -177,4 +219,4 @@ const ogBuffer = await sharp({
 await sharp(ogBuffer).toFile(path.join(imagesDir, 'og-image.png'))
 await copyFile(path.join(imagesDir, 'og-image.png'), path.join(appDir, 'opengraph-image.png'))
 
-console.log('Generated home-screen / PWA icons')
+console.log('Generated home-screen / PWA icons (Booster mascot)')

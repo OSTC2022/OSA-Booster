@@ -79,12 +79,12 @@ function MemberGraphSummaryHeader({
       className={cn(
         'rounded-xl border px-4 py-4',
         isMe
-          ? 'border-lime-400/40 bg-lime-500/12'
-          : 'border-lime-500/25 bg-black/30',
+          ? 'border-orange-400/40 bg-orange-500/12'
+          : 'border-orange-500/25 bg-black/30',
       )}
     >
       <div className="space-y-1.5">
-        <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-xl font-bold leading-tight text-lime-50">
+        <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-xl font-bold leading-tight text-orange-50">
           <span>{formatRankingMemberName(summary.displayName, { isMe })}</span>
           <MileageAnimalTierBadge
             mileageKm={mileageKm}
@@ -92,17 +92,17 @@ function MemberGraphSummaryHeader({
             className="text-xs"
           />
           {isMe && !isExplicitSelection ? (
-            <span className="text-sm font-medium text-lime-300/80">나</span>
+            <span className="text-sm font-medium text-orange-300/80">나</span>
           ) : null}
         </p>
         {summary.rankLine ? (
           <p className="text-sm font-medium text-zinc-200">{summary.rankLine}</p>
         ) : null}
         {summary.recordLine ? (
-          <p className="text-sm tabular-nums text-lime-200/90">{summary.recordLine}</p>
+          <p className="text-sm tabular-nums text-orange-200/90">{summary.recordLine}</p>
         ) : null}
         {summary.improvementLine ? (
-          <p className="text-sm font-semibold text-lime-300">{summary.improvementLine}</p>
+          <p className="text-sm font-semibold text-orange-300">{summary.improvementLine}</p>
         ) : null}
       </div>
       {isMe && !isExplicitSelection ? (
@@ -293,10 +293,10 @@ export function MemberRankingDetailPanel({
                 ? cn(
                     'bg-zinc-950/90',
                     emphasized
-                      ? 'border-lime-400/45 shadow-[0_0_28px_rgba(163,230,53,0.12)] ring-2 ring-lime-400/20'
-                      : 'border-lime-500/25',
+                      ? 'border-orange-400/45 shadow-[0_0_28px_rgba(255, 106, 42,0.12)] ring-2 ring-orange-400/20'
+                      : 'border-orange-500/25',
                   )
-                : 'border-lime-400/35 bg-zinc-950/80 ring-1 ring-lime-400/15',
+                : 'border-orange-400/35 bg-zinc-950/80 ring-1 ring-orange-400/15',
               className,
             ),
       )}
@@ -307,7 +307,7 @@ export function MemberRankingDetailPanel({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 shrink-0 px-2 text-[11px] text-zinc-400 hover:text-lime-200"
+            className="h-7 shrink-0 px-2 text-[11px] text-zinc-400 hover:text-orange-200"
             onClick={onClose}
           >
             {isExplicitSelection ? '전체 그래프' : isMe ? '닫기' : '내 그래프'}
@@ -318,9 +318,9 @@ export function MemberRankingDetailPanel({
       {isMobile && mobileFilterSlot ? mobileFilterSlot : null}
 
       {!isMobile ? (
-        <div className="flex items-start justify-between gap-3 border-b border-lime-500/15 px-4 py-3 sm:px-5">
+        <div className="flex items-start justify-between gap-3 border-b border-orange-500/15 px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-lime-300/80">그래프 · 성장 분석</p>
+            <p className="text-xs font-medium text-orange-300/80">그래프 · 성장 분석</p>
             {!isMe && isExplicitSelection && onClose ? (
               <p className="mt-0.5 text-[11px] text-zinc-500">다른 회원 보는 중</p>
             ) : null}
@@ -330,7 +330,7 @@ export function MemberRankingDetailPanel({
               type="button"
               variant="ghost"
               size="sm"
-              className="shrink-0 text-zinc-400 hover:text-lime-200"
+              className="shrink-0 text-zinc-400 hover:text-orange-200"
               onClick={onClose}
             >
               <X className="mr-1 h-3.5 w-3.5" />

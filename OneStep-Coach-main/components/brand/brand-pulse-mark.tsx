@@ -4,13 +4,13 @@ import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 /** UI용 — 비율 유지·정사각 캔버스 (배경 투명) */
-export const BRAND_PULSE_ICON_SRC = '/brand-pulse-icon.png?v=17'
+export const BRAND_PULSE_ICON_SRC = '/brand-pulse-icon.png?v=19'
 
 /** 컨테이너 대비 심볼 표시 비율 (여백으로 시각적 크기 조절) */
 const SYMBOL_DISPLAY_SCALE = 0.84
 
 const GLOW_CLASS =
-  'drop-shadow-[0_0_8px_rgba(170,255,0,0.85)] drop-shadow-[0_0_18px_rgba(170,255,0,0.5)]'
+  'drop-shadow-[0_0_8px_rgba(255,106,42,0.85)] drop-shadow-[0_0_18px_rgba(255,106,42,0.5)]'
 
 export function BrandPulseAppIcon({
   className,
@@ -24,7 +24,7 @@ export function BrandPulseAppIcon({
       className={cn(
         'relative inline-flex aspect-square shrink-0 items-center justify-center',
         glow &&
-          'before:pointer-events-none before:absolute before:inset-[10%] before:rounded-full before:bg-[radial-gradient(circle,rgba(170,255,0,0.38)_0%,transparent_72%)] before:blur-md',
+          'before:pointer-events-none before:absolute before:inset-[10%] before:rounded-full before:bg-[radial-gradient(circle,rgba(255,106,42,0.38)_0%,transparent_72%)] before:blur-md',
         className,
       )}
     >

@@ -9,7 +9,9 @@ import {
   ADULT_PORTAL_BRAND_EYEBROW_SIZE_OPTIONS,
   ADULT_PORTAL_BRAND_TITLE_SIZE_OPTIONS,
   ADULT_PORTAL_BRAND_WEIGHT_OPTIONS,
+  DEFAULT_ADULT_PORTAL_BRAND_EYEBROW_COLOR,
   DEFAULT_ADULT_PORTAL_BRAND_TITLE,
+  DEFAULT_ADULT_PORTAL_BRAND_TITLE_COLOR,
   resolveAdultPortalBrand,
   type AdultPortalBrandConfig,
 } from '@/lib/adult-portal-brand'
@@ -43,8 +45,8 @@ function toFormState(settings: CenterSettings): BrandFormState {
   return {
     eyebrow: settings.adult_portal_brand_eyebrow?.trim() || RUNNING_LEAGUE_EN,
     title: settings.adult_portal_brand_title?.trim() || DEFAULT_ADULT_PORTAL_BRAND_TITLE,
-    eyebrow_color: brand.eyebrowColor || '#a3e635',
-    title_color: brand.titleColor || '#fafafa',
+    eyebrow_color: brand.eyebrowColor || DEFAULT_ADULT_PORTAL_BRAND_EYEBROW_COLOR,
+    title_color: brand.titleColor || DEFAULT_ADULT_PORTAL_BRAND_TITLE_COLOR,
     eyebrow_size: settings.adult_portal_brand_eyebrow_size || '',
     title_size: settings.adult_portal_brand_title_size || '',
     eyebrow_weight: settings.adult_portal_brand_eyebrow_weight || '',
@@ -173,8 +175,8 @@ export function AdultPortalBrandSettingsPanel({
     setFormData({
       eyebrow: RUNNING_LEAGUE_EN,
       title: DEFAULT_ADULT_PORTAL_BRAND_TITLE,
-      eyebrow_color: '#a3e635',
-      title_color: '#fafafa',
+      eyebrow_color: DEFAULT_ADULT_PORTAL_BRAND_EYEBROW_COLOR,
+      title_color: DEFAULT_ADULT_PORTAL_BRAND_TITLE_COLOR,
       eyebrow_size: '',
       title_size: '',
       eyebrow_weight: '',

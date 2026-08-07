@@ -57,7 +57,7 @@ function toneClasses(tone: 'good' | 'caution' | 'alert' | null, selected: boolea
     return 'border-border/60 bg-background/40 text-foreground/80 hover:bg-muted/25'
   }
   if (tone === 'good') {
-    return 'border-lime-400/80 bg-lime-400/15 text-lime-100 ring-2 ring-lime-400/35 shadow-sm'
+    return 'border-orange-400/80 bg-orange-400/15 text-orange-100 ring-2 ring-orange-400/35 shadow-sm'
   }
   if (tone === 'caution') {
     return 'border-amber-400/70 bg-amber-500/15 text-amber-100 ring-2 ring-amber-400/30'
@@ -65,7 +65,7 @@ function toneClasses(tone: 'good' | 'caution' | 'alert' | null, selected: boolea
   if (tone === 'alert') {
     return 'border-red-500/60 bg-red-500/15 text-red-200 ring-2 ring-red-500/30'
   }
-  return 'border-lime-400/70 bg-lime-400/10 text-lime-100 ring-2 ring-lime-400/30'
+  return 'border-orange-400/70 bg-orange-400/10 text-orange-100 ring-2 ring-orange-400/30'
 }
 
 function RecoveryChoiceButtons<K extends string>({

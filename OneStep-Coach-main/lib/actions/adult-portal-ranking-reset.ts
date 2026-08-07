@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { requireRole } from '@/lib/actions/auth'
 import { getCenterSettingsCached } from '@/lib/data/center-settings-read'
 import { ADMIN_OR_OPERATOR_ROLES } from '@/lib/operator-access'
@@ -12,7 +12,7 @@ import { createServiceRoleClient } from '@/lib/supabase/admin'
 const CENTER_SETTINGS_ID = 'default'
 
 function revalidateAdultPortalRankingPaths() {
-  revalidateTag('center-settings', 'max')
+  updateTag('center-settings')
   revalidatePath('/dashboard/settings/adult-running-portal')
   revalidatePath('/dashboard/my')
   revalidatePath('/dashboard/my/running-league')

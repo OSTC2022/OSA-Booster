@@ -6,10 +6,10 @@ import {
   CalendarDays,
   ChevronDown,
   ExternalLink,
-  Loader2,
   MapPin,
   Users,
 } from 'lucide-react'
+import { ParticipationToggle } from '@/components/dashboard/participation-toggle'
 import { toast } from 'sonner'
 import { toggleCenterRunningTrainingScheduleSignup } from '@/lib/actions/center-running-training-schedule'
 import type { RunningLeagueTrainingScheduleDayView } from '@/lib/running-league/training-schedule'
@@ -38,6 +38,8 @@ type MemberRunningLeagueTrainingScheduleProps = {
   readOnly?: boolean
   embedded?: boolean
   className?: string
+  /** 상위 아코디언에서 헤더 없이 본문만 표시 */
+  contentOnly?: boolean
 }
 
 function isVotableDay(day: RunningLeagueTrainingScheduleDayView): boolean {
@@ -65,6 +67,7 @@ export function MemberRunningLeagueTrainingSchedule({
   readOnly = false,
   embedded = false,
   className,
+  contentOnly = false,
 }: MemberRunningLeagueTrainingScheduleProps) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -153,34 +156,7 @@ export function MemberRunningLeagueTrainingSchedule({
         ? '등록된 일정 없음'
         : '준비 중'
 
-  return (
-    <section
-      className={cn(!embedded && MEMBER_PORTAL_SHELL_CLASS, className)}
-    >
-      <div className={MEMBER_PORTAL_CARD_CLASS}>
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-2 border-b border-lime-500/15 px-3 py-2.5 text-left sm:px-4"
-          onClick={() => setSectionOpen((value) => !value)}
-          aria-expanded={sectionOpen}
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            <CalendarDays className="h-4 w-4 shrink-0 text-lime-400" />
-            <h2 className="text-base font-bold text-lime-50 sm:text-lg">이번 주 훈련 스케줄</h2>
-            {!sectionOpen ? (
-              <span className="truncate text-xs text-zinc-500">{collapsedSummary}</span>
-            ) : null}
-          </div>
-          <ChevronDown
-            className={cn(
-              'h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-200',
-              sectionOpen && 'rotate-180',
-            )}
-            aria-hidden
-          />
-        </button>
-
-        {sectionOpen ? (
+  const scheduleBody = (
           <div className="space-y-1.5 p-2.5 sm:p-3">
             {!hasWeekSchedule ? (
               <p className="px-2 py-6 text-center text-sm text-zinc-500">
@@ -207,8 +183,9 @@ export function MemberRunningLeagueTrainingSchedule({
               )
             )}
           </div>
-        ) : null}
+  )
 
+  const participantsDialog = (
         <ParticipantsDialog
           day={activeDay}
           isSignedUp={
@@ -226,73 +203,48 @@ export function MemberRunningLeagueTrainingSchedule({
           readOnly={readOnly}
           canParticipate={canParticipate}
         />
+  )
+
+  if (contentOnly) {
+    return (
+      <>
+        {scheduleBody}
+        {participantsDialog}
+      </>
+    )
+  }
+
+  return (
+    <section
+      className={cn(!embedded && MEMBER_PORTAL_SHELL_CLASS, className)}
+    >
+      <div className={MEMBER_PORTAL_CARD_CLASS}>
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-2 border-b border-orange-500/15 px-3 py-2.5 text-left sm:px-4"
+          onClick={() => setSectionOpen((value) => !value)}
+          aria-expanded={sectionOpen}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <CalendarDays className="h-4 w-4 shrink-0 text-orange-400" />
+            <h2 className="text-sm font-semibold text-orange-100">훈련 일정</h2>
+            {!sectionOpen ? (
+              <span className="truncate text-xs text-zinc-500">{collapsedSummary}</span>
+            ) : null}
+          </div>
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-200',
+              sectionOpen && 'rotate-180',
+            )}
+            aria-hidden
+          />
+        </button>
+
+        {sectionOpen ? scheduleBody : null}
+        {participantsDialog}
       </div>
     </section>
-  )
-}
-
-function ParticipationToggle({
-  active,
-  pending,
-  disabled,
-  onToggle,
-}: {
-  active: boolean
-  pending: boolean
-  disabled: boolean
-  onToggle: () => void
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={active}
-      aria-label={active ? '참여 취소' : '참여하기'}
-      disabled={disabled || pending}
-      onClick={(event) => {
-        event.stopPropagation()
-        onToggle()
-      }}
-      className={cn(
-        'relative h-8 w-[4.85rem] shrink-0 rounded-full border p-0.5 transition-all duration-300',
-        active
-          ? 'border-lime-400/70 bg-lime-500/15 shadow-[0_0_14px_rgba(163,230,53,0.38)]'
-          : 'border-lime-500/20 bg-black/55',
-        (disabled || pending) && 'opacity-60',
-      )}
-    >
-      <span
-        className={cn(
-          'pointer-events-none absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full transition-all duration-300 ease-out',
-          active
-            ? 'left-0.5 bg-lime-400 shadow-[0_0_10px_rgba(190,242,100,0.75)]'
-            : 'left-[calc(50%)] bg-zinc-600/90',
-        )}
-      />
-      <span className="relative z-10 grid h-full grid-cols-2 text-[10px] font-semibold leading-none">
-        <span
-          className={cn(
-            'flex items-center justify-center transition-colors duration-300',
-            active ? 'text-black' : 'text-zinc-600',
-          )}
-        >
-          참여
-        </span>
-        <span
-          className={cn(
-            'flex items-center justify-center transition-colors duration-300',
-            active ? 'text-zinc-500' : 'text-zinc-400',
-          )}
-        >
-          취소
-        </span>
-      </span>
-      {pending ? (
-        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-lime-300" />
-        </span>
-      ) : null}
-    </button>
   )
 }
 
@@ -334,14 +286,14 @@ function ScheduleDayRow({
   onToggleSignup: () => void
 }) {
   return (
-    <div className="flex w-full items-start gap-2 rounded-lg border border-lime-500/15 bg-black/35 px-2.5 py-2">
+    <div className="flex w-full items-start gap-2 rounded-lg border border-orange-500/15 bg-black/35 px-2.5 py-2">
       <button
         type="button"
         onClick={onOpenParticipants}
         className="flex min-w-0 flex-1 items-start gap-2 text-left transition-colors hover:opacity-90"
       >
         <span className="mt-0.5 flex shrink-0 flex-col items-center gap-0.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-lime-500/15 text-xs font-bold text-lime-200">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-orange-500/15 text-xs font-bold text-orange-200">
             {day.weekday_label}
           </span>
           {day.schedule_date_label ? (
@@ -367,7 +319,7 @@ function ScheduleDayRow({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(event) => event.stopPropagation()}
-                className="inline-flex items-center gap-0.5 rounded-full border border-lime-500/25 px-2 py-0.5 text-[10px] text-lime-200 hover:bg-lime-500/10"
+                className="inline-flex items-center gap-0.5 rounded-full border border-orange-500/25 px-2 py-0.5 text-[10px] text-orange-200 hover:bg-orange-500/10"
               >
                 위치 보기
                 <ExternalLink className="h-3 w-3" />
@@ -411,11 +363,11 @@ function ParticipantsDialog({
 }) {
   return (
     <Dialog open={day != null} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm border-lime-500/25 bg-zinc-950">
+      <DialogContent className="max-w-sm border-orange-500/25 bg-zinc-950">
         {day ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-lime-100">
+              <DialogTitle className="text-orange-100">
                 {day.weekday_label}요일 참여 명단
                 {day.schedule_date_label ? (
                   <span className="ml-1.5 text-sm font-normal text-zinc-400">
@@ -436,7 +388,7 @@ function ParticipantsDialog({
                   {day.signups.map((signup) => (
                     <li
                       key={`${signup.member_id}-${signup.signed_at}`}
-                      className="rounded-md border border-lime-500/15 bg-black/40 px-3 py-2 text-sm text-zinc-200"
+                      className="rounded-md border border-orange-500/15 bg-black/40 px-3 py-2 text-sm text-zinc-200"
                     >
                       {signup.member_name}
                     </li>
@@ -446,7 +398,7 @@ function ParticipantsDialog({
 
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {day.map_href ? (
-                  <Button asChild variant="outline" size="sm" className="border-lime-500/25">
+                  <Button asChild variant="outline" size="sm" className="border-orange-500/25">
                     <a href={day.map_href} target="_blank" rel="noopener noreferrer">
                       <MapPin className="mr-1 h-3.5 w-3.5" />
                       위치 보기

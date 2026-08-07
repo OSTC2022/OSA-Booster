@@ -12,7 +12,7 @@ export type MileageHistoryPoint = {
 
 function formatChartDate(value: string): string {
   try {
-    return format(parseISO(value), 'M/d', { locale: ko })
+    return format(parseISO(value.slice(0, 10)), 'M/d', { locale: ko })
   } catch {
     return value
   }
@@ -41,9 +41,10 @@ export function buildMemberMileageHistorySeries(
     const dailyKm = Math.round(Number(log.distance_km ?? 0) * 10) / 10
     if (dailyKm <= 0) continue
     cumulativeKm = Math.round((cumulativeKm + dailyKm) * 10) / 10
+    const dateKey = String(log.logged_at ?? '').trim().slice(0, 10) || log.logged_at
     points.push({
-      date: log.logged_at,
-      label: formatChartDate(log.logged_at),
+      date: dateKey,
+      label: formatChartDate(dateKey),
       cumulativeKm,
       dailyKm,
     })

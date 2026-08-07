@@ -15,6 +15,7 @@ export interface User {
   phone?: string | null
   kakao_id?: string | null
   instagram_id?: string | null
+  kakao_qr_url?: string | null
 }
 
 export interface Profile {
@@ -29,6 +30,7 @@ export interface Profile {
   phone?: string | null
   kakao_id?: string | null
   instagram_id?: string | null
+  kakao_qr_url?: string | null
 }
 
 export interface Instructor {
@@ -248,6 +250,10 @@ export interface CenterSettings {
   adult_portal_animal_tier_half_start?: string | null
   /** 동물 등급 절반 이벤트 종료일 (YYYY-MM-DD) */
   adult_portal_animal_tier_half_end?: string | null
+  /** 랭킹 개인전(마일리지·출석·이겨라·PB) 표시 */
+  adult_portal_ranking_show_individual?: boolean
+  /** 랭킹 팀전 표시 */
+  adult_portal_ranking_show_team?: boolean
   updated_at: string
 }
 

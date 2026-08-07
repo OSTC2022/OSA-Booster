@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Building2, CalendarDays, CalendarSync, Eye, HardDrive, Megaphone, Trophy, Users } from 'lucide-react'
+import { Award, Building2, CalendarDays, CalendarSync, Eye, HardDrive, Megaphone, MessageCircle, Trophy, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isOperatorSettingsNavHref } from '@/lib/operator-access'
 import type { UserRole } from '@/lib/types'
@@ -21,7 +21,9 @@ const SETTINGS_TABS = [
       !path.startsWith('/dashboard/settings/adult-running-portal') &&
       !path.startsWith('/dashboard/settings/running-schedule') &&
       !path.startsWith('/dashboard/settings/running-league') &&
-      !path.startsWith('/dashboard/settings/backup'),
+      !path.startsWith('/dashboard/settings/backup') &&
+      !path.startsWith('/dashboard/settings/operator-contact') &&
+      !path.startsWith('/dashboard/settings/hall-of-fame'),
   },
   {
     href: '/dashboard/settings/adult-running-portal',
@@ -60,6 +62,18 @@ const SETTINGS_TABS = [
     label: 'Drive 백업',
     icon: HardDrive,
     isActive: (path: string) => path.startsWith('/dashboard/settings/backup'),
+  },
+  {
+    href: '/dashboard/settings/operator-contact',
+    label: '운영진 연락처',
+    icon: MessageCircle,
+    isActive: (path: string) => path.startsWith('/dashboard/settings/operator-contact'),
+  },
+  {
+    href: '/dashboard/settings/hall-of-fame',
+    label: '명예의 전당',
+    icon: Award,
+    isActive: (path: string) => path.startsWith('/dashboard/settings/hall-of-fame'),
   },
   {
     href: '/dashboard/settings/center-contact',

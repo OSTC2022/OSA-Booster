@@ -5,16 +5,16 @@ export default function manifest(): MetadataRoute.Manifest {
   const iconQuery = `v=${PWA_ASSET_VERSION}`
 
   return {
-    id: 'onestep-coach-pwa',
-    name: '원스텝',
-    short_name: '원스텝',
-    description: 'OneStep Training Center',
+    id: 'booster-running-crew-pwa',
+    name: '부스터 러닝크루',
+    short_name: '부스터 러닝크루',
+    description: 'Booster Running Crew',
     scope: '/',
     start_url: '/',
     display: 'standalone',
     display_override: ['standalone', 'fullscreen'],
-    background_color: '#070d18',
-    theme_color: '#070d18',
+    background_color: '#090b12',
+    theme_color: '#090b12',
     orientation: 'portrait-primary',
     lang: 'ko',
     prefer_related_applications: false,

@@ -3,46 +3,44 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* OneStep Coach - Dark Sports-Tech Theme */
-/* Primary: #0A0A0A (Black), Accent: #AAFF00 (Neon Green), Secondary: #0D1B2A (Dark Navy) */
+/* BooSter Running Crew — Dark asphalt + flame orange */
+/* Background: #090b12, Accent: #ff6a2a, Card: #0b1422 */
 
 :root {
-  /* Dark theme by default for sports-tech feel */
-  --background: #0A0A0A;
+  --background: #090b12;
   --foreground: #F5F5F5;
-  --card: #0D1B2A;
+  --card: #0b1422;
   --card-foreground: #F5F5F5;
-  --popover: #0D1B2A;
+  --popover: #0b1422;
   --popover-foreground: #F5F5F5;
-  --primary: #AAFF00;
-  --primary-foreground: #0A0A0A;
-  --secondary: #1B2838;
+  --primary: #ff6a2a;
+  --primary-foreground: #FFFFFF;
+  --secondary: #161d2c;
   --secondary-foreground: #F5F5F5;
-  --muted: #1B2838;
+  --muted: #161d2c;
   --muted-foreground: #9CA3AF;
-  --accent: #AAFF00;
-  --accent-foreground: #0A0A0A;
+  --accent: #ff6a2a;
+  --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --border: #2D3748;
-  --input: #1B2838;
-  --ring: #AAFF00;
-  --chart-1: #AAFF00;
-  --chart-2: #22D3EE;
-  --chart-3: #A78BFA;
-  --chart-4: #FB923C;
-  --chart-5: #F472B6;
+  --border: #2a3348;
+  --input: #161d2c;
+  --ring: #ff6a2a;
+  --chart-1: #ff6a2a;
+  --chart-2: #ffb03a;
+  --chart-3: #ff3d6e;
+  --chart-4: #22D3EE;
+  --chart-5: #A78BFA;
   --radius: 0.5rem;
-  --sidebar: #0D1B2A;
+  --sidebar: #0b1422;
   --sidebar-foreground: #F5F5F5;
-  --sidebar-primary: #AAFF00;
-  --sidebar-primary-foreground: #0A0A0A;
-  --sidebar-accent: #1B2838;
+  --sidebar-primary: #ff6a2a;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #161d2c;
   --sidebar-accent-foreground: #F5F5F5;
-  --sidebar-border: #2D3748;
-  --sidebar-ring: #AAFF00;
-  
-  /* Custom tokens for OneStep Coach */
+  --sidebar-border: #2a3348;
+  --sidebar-ring: #ff6a2a;
+
   --success: #22C55E;
   --success-foreground: #FFFFFF;
   --warning: #F59E0B;
@@ -52,38 +50,38 @@
 }
 
 .dark {
-  --background: #0A0A0A;
+  --background: #090b12;
   --foreground: #F5F5F5;
-  --card: #0D1B2A;
+  --card: #0b1422;
   --card-foreground: #F5F5F5;
-  --popover: #0D1B2A;
+  --popover: #0b1422;
   --popover-foreground: #F5F5F5;
-  --primary: #AAFF00;
-  --primary-foreground: #0A0A0A;
-  --secondary: #1B2838;
+  --primary: #ff6a2a;
+  --primary-foreground: #FFFFFF;
+  --secondary: #161d2c;
   --secondary-foreground: #F5F5F5;
-  --muted: #1B2838;
+  --muted: #161d2c;
   --muted-foreground: #9CA3AF;
-  --accent: #AAFF00;
-  --accent-foreground: #0A0A0A;
+  --accent: #ff6a2a;
+  --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --border: #2D3748;
-  --input: #1B2838;
-  --ring: #AAFF00;
-  --chart-1: #AAFF00;
-  --chart-2: #22D3EE;
-  --chart-3: #A78BFA;
-  --chart-4: #FB923C;
-  --chart-5: #F472B6;
-  --sidebar: #0D1B2A;
+  --border: #2a3348;
+  --input: #161d2c;
+  --ring: #ff6a2a;
+  --chart-1: #ff6a2a;
+  --chart-2: #ffb03a;
+  --chart-3: #ff3d6e;
+  --chart-4: #22D3EE;
+  --chart-5: #A78BFA;
+  --sidebar: #0b1422;
   --sidebar-foreground: #F5F5F5;
-  --sidebar-primary: #AAFF00;
-  --sidebar-primary-foreground: #0A0A0A;
-  --sidebar-accent: #1B2838;
+  --sidebar-primary: #ff6a2a;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #161d2c;
   --sidebar-accent-foreground: #F5F5F5;
-  --sidebar-border: #2D3748;
-  --sidebar-ring: #AAFF00;
+  --sidebar-border: #2a3348;
+  --sidebar-ring: #ff6a2a;
 }
 
 @theme inline {
@@ -280,5 +278,191 @@ html.onestep-splash-active body {
   }
   75% {
     content: '...';
+  }
+}
+
+/* —— BooSter Running Crew motion —— */
+@keyframes booster-mark-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes booster-s-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(255, 100, 30, 0.35));
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(255, 130, 40, 0.85));
+    transform: scale(1.06) translateY(-1px);
+  }
+}
+
+@keyframes booster-s-sheen {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  55% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(280%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes booster-word-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes booster-crew-breathe {
+  0%,
+  100% {
+    letter-spacing: 0.32em;
+    opacity: 0.82;
+  }
+  50% {
+    letter-spacing: 0.4em;
+    opacity: 1;
+  }
+}
+
+@keyframes booster-corner-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes booster-frame-scan {
+  0% {
+    top: 8%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.35;
+  }
+  100% {
+    top: 88%;
+    opacity: 0;
+  }
+}
+
+@keyframes booster-ember-drift {
+  0% {
+    transform: translate3d(0, 8px, 0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate3d(var(--ember-x, 12px), -110px, 0) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes booster-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.booster-mark-enter {
+  animation: booster-mark-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.booster-frame-enter {
+  animation: booster-mark-enter 0.85s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.booster-s-pulse {
+  animation: booster-s-pulse 2.4s ease-in-out infinite;
+}
+
+.booster-s-sheen {
+  animation: booster-s-sheen 2.8s ease-in-out infinite;
+}
+
+.booster-word-float {
+  animation: booster-word-float 3.2s ease-in-out infinite;
+}
+
+.booster-word-float-delay {
+  animation-delay: 0.45s;
+}
+
+.booster-crew-breathe {
+  animation: booster-crew-breathe 3.6s ease-in-out infinite;
+}
+
+.booster-corner {
+  transform-origin: center;
+  animation: booster-corner-breathe 2.6s ease-in-out infinite;
+}
+
+.booster-corner-tr {
+  animation-delay: 0.2s;
+}
+.booster-corner-br {
+  animation-delay: 0.4s;
+}
+.booster-corner-bl {
+  animation-delay: 0.6s;
+}
+
+.booster-frame-scan {
+  animation: booster-frame-scan 3.4s ease-in-out infinite;
+}
+
+.booster-ember {
+  animation: booster-ember-drift 4.5s ease-out infinite;
+}
+
+.booster-glow-breathe {
+  animation: booster-glow-breathe 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booster-mark-enter,
+  .booster-frame-enter,
+  .booster-s-pulse,
+  .booster-s-sheen,
+  .booster-word-float,
+  .booster-crew-breathe,
+  .booster-corner,
+  .booster-frame-scan,
+  .booster-ember,
+  .booster-glow-breathe {
+    animation: none !important;
   }
 }

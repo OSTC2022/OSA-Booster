@@ -12,7 +12,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
@@ -21,7 +20,16 @@ import { PhoneInput } from '@/components/ui/phone-input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MemberGenderField } from '@/components/members/member-gender-field'
-import { BrandPulseAppIcon } from '@/components/brand/brand-pulse-mark'
+import {
+  BoosterAtmosphere,
+  BoosterRunningCrewMark,
+  BoosterSSymbol,
+} from '@/components/brand/booster-running-crew-mark'
+import { BoosterMascot } from '@/components/brand/booster-mascot'
+import { OperatorContactDialog } from '@/components/brand/operator-contact-dialog'
+import { HallOfFameDialog } from '@/components/brand/hall-of-fame-dialog'
+import { prefetchHallOfFameEntries } from '@/lib/hall-of-fame-client'
+import { prefetchOperatorContacts } from '@/lib/operator-contacts-client'
 import {
   LOGIN_IDENTIFIER_STORAGE_KEY,
   REMEMBER_ME_STORAGE_KEY,
@@ -53,6 +61,8 @@ export default function LoginPage() {
   } | null>(null)
   const [loginPending, setLoginPending] = useState(false)
   const [signUpPending, setSignUpPending] = useState(false)
+  const [operatorContactOpen, setOperatorContactOpen] = useState(false)
+  const [hallOfFameOpen, setHallOfFameOpen] = useState(false)
   const [resetState, setResetState] = useState<{
     error?: string
     success?: boolean
@@ -242,6 +252,11 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
+    prefetchHallOfFameEntries()
+    prefetchOperatorContacts()
+  }, [])
+
+  useEffect(() => {
     if (loginState?.error) {
       toast.error('로그인 실패', { description: loginState.error })
     }
@@ -261,18 +276,40 @@ export default function LoginPage() {
   }, [resetState])
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 bg-background">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#090b12] p-4">
+      <BoosterAtmosphere />
+      <div
+        className="absolute right-2 top-1.5 z-20 flex items-center gap-3 sm:right-5 sm:top-3 sm:gap-4"
+        onPointerEnter={() => {
+          prefetchHallOfFameEntries()
+          prefetchOperatorContacts()
+        }}
+      >
+        <BoosterSSymbol
+          interactive
+          onClick={() => setHallOfFameOpen(true)}
+        />
+        <BoosterMascot
+          size="sm"
+          interactive
+          onClick={() => setOperatorContactOpen(true)}
+          className="opacity-95"
+        />
+      </div>
+      <OperatorContactDialog
+        open={operatorContactOpen}
+        onOpenChange={setOperatorContactOpen}
+      />
+      <HallOfFameDialog open={hallOfFameOpen} onOpenChange={setHallOfFameOpen} />
 
-      <Card className="w-full max-w-md relative z-10 border-border/50 bg-card/80 backdrop-blur-sm">
-        <CardHeader className="space-y-4 text-center">
-          <BrandPulseAppIcon className="mx-auto h-16 w-16 translate-y-1" />
-          <div>
-            <CardTitle className="text-2xl font-bold">OneStep Coach</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              스포츠 트레이닝 센터 관리 시스템
-            </CardDescription>
+      <Card className="relative z-10 w-full max-w-md overflow-visible border-white/10 bg-[#0b1422]/90 shadow-[0_0_40px_rgba(255,90,20,0.08)] backdrop-blur-md">
+        <CardHeader className="space-y-3 overflow-visible pb-2 text-center">
+          <div className="mx-auto overflow-visible py-3">
+            <BoosterRunningCrewMark size="md" />
           </div>
+          <CardDescription className="text-white/50">
+            로그인하고 크루에 합류하세요
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs
@@ -406,7 +443,7 @@ export default function LoginPage() {
                   </label>
                   <Button
                     type="submit"
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="w-full bg-gradient-to-r from-[#ff4d1a] to-[#ff9a1a] font-semibold text-white hover:from-[#ff5c2a] hover:to-[#ffb02e]"
                     disabled={loginPending}
                   >
                     {loginPending ? (
@@ -519,7 +556,8 @@ export default function LoginPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">
-                    이메일 <span className="text-destructive">*</span>
+                    이메일(로그인 시 아이디가 됩니다){' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="signup-email"

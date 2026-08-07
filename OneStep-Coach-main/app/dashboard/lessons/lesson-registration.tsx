@@ -185,7 +185,7 @@ export function LessonRegistration({
     
     ctx.fillStyle = '#1B2838'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.strokeStyle = '#AAFF00'
+    ctx.strokeStyle = '#ff6a2a'
     ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'

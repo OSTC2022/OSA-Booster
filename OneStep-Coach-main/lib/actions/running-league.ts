@@ -41,6 +41,15 @@ import {
   sumMileageLogsKm,
   type MileageDistanceLeaderboard,
 } from '@/lib/running-league/mileage-leaderboard'
+import { listPortalMileageTeams } from '@/lib/actions/portal-mileage-teams'
+import type {
+  PortalMileageTeam,
+  PortalMileageTeamMember,
+} from '@/lib/running-league/mileage-team-leaderboard'
+import {
+  resolveRankingCompetitionModes,
+  type RankingCompetitionModes,
+} from '@/lib/running-league/ranking-competition-modes'
 import { getCenterSettingsCached } from '@/lib/data/center-settings-read'
 import { resolveMileageRecognitionFromCenterSettings, type MileageRecognition } from '@/lib/running-league/mileage-recognition'
 import { resolveAnimalTierHalfThresholdsFromCenterSettings } from '@/lib/running-league/mileage-animal-tier'
@@ -1928,10 +1937,19 @@ async function assertStaffAdultRunningPortalAccess(memberId: string) {
 export type MemberRunningLeagueRankingBundle = {
   participants: RunningLeagueParticipant[]
   pbRecords: RunningLeagueRecord[]
+  /** 현재 랭킹 기간(이번 달/챌린지) 로그만 — 순위·출석용 */
   mileageLogs: RunningLeagueMileageLog[]
+  /**
+   * 그래프용 누적 이력 (과거 달 포함). 월이 바뀌어도 삭제하지 않음.
+   * 없으면 mileageLogs 로 폴백.
+   */
+  mileageHistoryLogs?: RunningLeagueMileageLog[]
   rankingPeriod: PortalRankingPeriod
   mileageRecognition: MileageRecognition
   animalTierHalfThresholds: boolean
+  mileageTeams: PortalMileageTeam[]
+  mileageTeamMembers: PortalMileageTeamMember[]
+  rankingCompetitionModes: RankingCompetitionModes
 }
 
 export type MemberMonthlyLessonRow = {
@@ -2053,7 +2071,13 @@ async function fetchMemberRunningLeagueHome(
           ]
         : [Promise.resolve({ data: null, error: null })]
 
-    const [myResult, allParticipantsResult, leaguePbRecordsResult, leagueMileageLogsResult, leaguePbSnapshotsResult] =
+    const [
+      myResult,
+      allParticipantsResult,
+      leaguePbRecordsResult,
+      leagueMileageLogsResult,
+      leaguePbSnapshotsResult,
+    ] =
       await Promise.all([
         ...participantQueries,
         withParticipantSelect((select) =>
@@ -2083,6 +2107,20 @@ async function fetchMemberRunningLeagueHome(
           )
           .eq('league_id', league.id),
       ])
+
+    // 그래프용 누적 이력 — 최근 24개월 (월 전환 시에도 DB에서 삭제하지 않음)
+    const mileageHistoryStart = (() => {
+      const d = new Date()
+      d.setMonth(d.getMonth() - 24)
+      return d.toISOString().slice(0, 10)
+    })()
+    const leagueMileageHistoryResult = await leaderboardSupabase
+      .from('running_league_mileage_logs')
+      .select('id, participant_id, league_id, member_id, distance_km, logged_at')
+      .eq('league_id', league.id)
+      .gte('logged_at', mileageHistoryStart)
+      .order('logged_at', { ascending: true })
+      .limit(8000)
 
     if (isMissingTableError(allParticipantsResult.error)) {
       return emptyMemberRunningLeagueHome({ league, tableReady: false })
@@ -2168,6 +2206,24 @@ async function fetchMemberRunningLeagueHome(
           rankingsError = RANKINGS_LOAD_ERROR
         }
 
+        const leagueMileageHistoryLogs = filterRecordsForAdultParticipants(
+          (leagueMileageHistoryResult.error &&
+          !isMissingTableError(leagueMileageHistoryResult.error)
+            ? []
+            : (leagueMileageHistoryResult.data ?? [])
+          ).map((row) => mapMileageLog(row as Record<string, unknown>)),
+          adultParticipantIds,
+        )
+        if (
+          leagueMileageHistoryResult.error &&
+          !isMissingTableError(leagueMileageHistoryResult.error)
+        ) {
+          console.error(
+            'fetchMemberRunningLeagueHome.mileageHistoryLogs',
+            leagueMileageHistoryResult.error,
+          )
+        }
+
         pb5kLeaderboard = buildPbDistanceLeaderboard(adultParticipants, leaguePbRecords, '5km')
         pb10kLeaderboard = buildPbDistanceLeaderboard(adultParticipants, leaguePbRecords, '10km')
         pbHalfLeaderboard = buildPbDistanceLeaderboard(adultParticipants, leaguePbRecords, 'half')
@@ -2178,13 +2234,25 @@ async function fetchMemberRunningLeagueHome(
           mileageRecognition,
         )
         scoreLeaderboard = buildLeaderboard(adultParticipants)
+        const mileageTeamsResult = await listPortalMileageTeams()
         rankingBundle = {
           participants: adultParticipants,
           pbRecords: leaguePbRecordsWithSnapshots,
           mileageLogs: leagueMileageLogs,
+          mileageHistoryLogs:
+            leagueMileageHistoryLogs.length > 0
+              ? leagueMileageHistoryLogs
+              : leagueMileageLogs,
           rankingPeriod,
           mileageRecognition,
           animalTierHalfThresholds,
+          mileageTeams: mileageTeamsResult.teams,
+          mileageTeamMembers: mileageTeamsResult.memberships,
+          rankingCompetitionModes: resolveRankingCompetitionModes({
+            // 출석·이겨라 포함 개인전 탭은 항상 유지 (팀전만 켜진 경우에도 복구)
+            showIndividual: true,
+            showTeam: centerSettings.adult_portal_ranking_show_team === true,
+          }),
         }
       } catch (error) {
         console.error('fetchMemberRunningLeagueHome.rankings', error)

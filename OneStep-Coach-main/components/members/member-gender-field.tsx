@@ -48,8 +48,8 @@ export function MemberGenderField({
               className={cn(
                 'min-h-10 flex-1 rounded-full border px-4 text-sm font-medium transition-colors',
                 active
-                  ? 'border-lime-500/60 bg-lime-500/15 text-lime-100'
-                  : 'border-border bg-input/40 text-muted-foreground hover:border-lime-500/30 hover:text-foreground',
+                  ? 'border-orange-500/60 bg-orange-500/15 text-orange-100'
+                  : 'border-border bg-input/40 text-muted-foreground hover:border-orange-500/30 hover:text-foreground',
                 disabled && 'pointer-events-none opacity-60',
               )}
               aria-pressed={active}

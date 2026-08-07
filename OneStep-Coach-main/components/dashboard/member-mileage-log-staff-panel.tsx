@@ -174,14 +174,14 @@ export function MemberMileageLogStaffPanel({
 
   return (
     <>
-      <div className="rounded-xl border border-lime-500/25 bg-black/30 p-3 sm:p-4">
+      <div className="rounded-xl border border-orange-500/25 bg-black/30 p-3 sm:p-4">
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-lime-300/90">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-orange-300/90">
               <Route className="h-3.5 w-3.5 shrink-0" />
               러닝 기록 관리
             </p>
-            <p className="mt-1 truncate text-sm font-semibold text-lime-50">{memberName}</p>
+            <p className="mt-1 truncate text-sm font-semibold text-orange-50">{memberName}</p>
             <p className="mt-0.5 text-[11px] text-zinc-400">
               이번 달 {memberLogs.length}건 · 합계 {totalKm.toFixed(1)}km
             </p>
@@ -203,7 +203,7 @@ export function MemberMileageLogStaffPanel({
                     className={cn(
                       'flex items-center gap-1 rounded-lg border px-1 py-1',
                       selected || editing
-                        ? 'border-lime-400/40 bg-lime-500/10'
+                        ? 'border-orange-400/40 bg-orange-500/10'
                         : 'border-white/10 bg-black/20',
                     )}
                   >
@@ -224,7 +224,7 @@ export function MemberMileageLogStaffPanel({
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="h-7 w-7 shrink-0 text-lime-200 hover:text-lime-50"
+                      className="h-7 w-7 shrink-0 text-orange-200 hover:text-orange-50"
                       onClick={() => startEdit(log)}
                       aria-label="기록 수정"
                     >
@@ -267,9 +267,9 @@ export function MemberMileageLogStaffPanel({
         )}
 
         {editingLog && editForm ? (
-          <div className="mt-3 space-y-3 rounded-lg border border-lime-500/20 bg-lime-500/5 p-3">
+          <div className="mt-3 space-y-3 rounded-lg border border-orange-500/20 bg-orange-500/5 p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-medium text-lime-200">기록 수정</p>
+              <p className="text-xs font-medium text-orange-200">기록 수정</p>
               <Button
                 type="button"
                 size="icon"
@@ -338,7 +338,7 @@ export function MemberMileageLogStaffPanel({
             </div>
             <Button
               type="button"
-              className="w-full bg-lime-500 text-zinc-950 hover:bg-lime-400"
+              className="w-full bg-orange-500 text-zinc-950 hover:bg-orange-400"
               disabled={saving}
               onClick={submitEdit}
             >

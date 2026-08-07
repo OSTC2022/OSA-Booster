@@ -7,7 +7,7 @@ import type { CenterSettings } from '@/lib/types'
 const CENTER_SETTINGS_ID = 'default'
 
 const CENTER_SETTINGS_SELECT =
-  'id, name, kakao_id, instagram_id, blog_url, center_phone, naver_place_url, center_address, business_hours, show_instructor_contact, adult_portal_blind_member_usage, adult_portal_brand_eyebrow, adult_portal_brand_title, adult_portal_brand_eyebrow_color, adult_portal_brand_title_color, adult_portal_brand_eyebrow_size, adult_portal_brand_title_size, adult_portal_brand_eyebrow_weight, adult_portal_brand_title_weight, adult_portal_brand_hidden, adult_portal_ranking_period_start, adult_portal_ranking_period_end, adult_portal_chase_member_id, adult_portal_chase_label, adult_portal_notice, adult_portal_mileage_min_km_enabled, adult_portal_mileage_min_km, adult_portal_animal_tier_half_enabled, adult_portal_animal_tier_half_start, adult_portal_animal_tier_half_end, updated_at'
+  'id, name, kakao_id, instagram_id, blog_url, center_phone, naver_place_url, center_address, business_hours, show_instructor_contact, adult_portal_blind_member_usage, adult_portal_brand_eyebrow, adult_portal_brand_title, adult_portal_brand_eyebrow_color, adult_portal_brand_title_color, adult_portal_brand_eyebrow_size, adult_portal_brand_title_size, adult_portal_brand_eyebrow_weight, adult_portal_brand_title_weight, adult_portal_brand_hidden, adult_portal_ranking_period_start, adult_portal_ranking_period_end, adult_portal_chase_member_id, adult_portal_chase_label, adult_portal_notice, adult_portal_mileage_min_km_enabled, adult_portal_mileage_min_km, adult_portal_animal_tier_half_enabled, adult_portal_animal_tier_half_start, adult_portal_animal_tier_half_end, adult_portal_ranking_show_individual, adult_portal_ranking_show_team, updated_at'
 
 export const DEFAULT_CENTER_SETTINGS: CenterSettings = {
   id: CENTER_SETTINGS_ID,
@@ -40,6 +40,8 @@ export const DEFAULT_CENTER_SETTINGS: CenterSettings = {
   adult_portal_animal_tier_half_enabled: false,
   adult_portal_animal_tier_half_start: null,
   adult_portal_animal_tier_half_end: null,
+  adult_portal_ranking_show_individual: true,
+  adult_portal_ranking_show_team: false,
   updated_at: new Date().toISOString(),
 }
 
@@ -87,6 +89,11 @@ export function normalizeCenterSettingsRow(data: Record<string, unknown>): Cente
       (data.adult_portal_animal_tier_half_start as string | null) ?? null,
     adult_portal_animal_tier_half_end:
       (data.adult_portal_animal_tier_half_end as string | null) ?? null,
+    adult_portal_ranking_show_individual:
+      data.adult_portal_ranking_show_individual === undefined
+        ? true
+        : Boolean(data.adult_portal_ranking_show_individual),
+    adult_portal_ranking_show_team: Boolean(data.adult_portal_ranking_show_team),
     updated_at: String(data.updated_at ?? new Date().toISOString()),
   }
 }

@@ -64,7 +64,7 @@ function RouletteWheelDisc({
         className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1"
         aria-hidden
       >
-        <div className="h-0 w-0 border-x-[10px] border-x-transparent border-b-[16px] border-b-lime-300 drop-shadow-[0_0_8px_rgba(163,230,53,0.45)]" />
+        <div className="h-0 w-0 border-x-[10px] border-x-transparent border-b-[16px] border-b-orange-300 drop-shadow-[0_0_8px_rgba(255, 106, 42,0.45)]" />
       </div>
       <div className="absolute inset-0 rounded-full border-2 border-zinc-700/90 bg-zinc-950 p-[3px] shadow-[0_0_24px_rgba(0,0,0,0.45)]">
         <div
@@ -83,7 +83,7 @@ function RouletteWheelDisc({
       </div>
       <div className="pointer-events-none absolute inset-[28%] rounded-full border border-white/10 bg-zinc-950/90 shadow-inner" />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="rounded-full border border-zinc-600/50 bg-zinc-950/90 px-3 py-1.5 text-center text-[10px] font-semibold text-lime-200">
+        <div className="rounded-full border border-zinc-600/50 bg-zinc-950/90 px-3 py-1.5 text-center text-[10px] font-semibold text-orange-200">
           {slots.length}칸
         </div>
       </div>
@@ -160,18 +160,18 @@ export function AttendanceRouletteWheel({
           variant="outline"
           size="sm"
           className={cn(
-            'h-9 gap-1.5 border-lime-500/30 bg-lime-500/5 px-2.5 text-[11px] text-lime-100 hover:bg-lime-500/10',
+            'h-9 gap-1.5 border-orange-500/30 bg-orange-500/5 px-2.5 text-[11px] text-orange-100 hover:bg-orange-500/10',
             className,
           )}
           aria-label="출석 돌림판 열기"
         >
-          <Disc3 className="h-4 w-4 shrink-0 text-lime-300" />
-          <span className="hidden sm:inline">돌림판</span>
+          <Disc3 className="h-4 w-4 shrink-0 text-orange-300" />
+          <span className="sm:inline">돌림판</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md border-lime-500/20 bg-zinc-950 text-zinc-100">
+      <DialogContent className="max-w-md border-orange-500/20 bg-zinc-950 text-zinc-100">
         <DialogHeader>
-          <DialogTitle className="text-lime-100">출석 돌림판</DialogTitle>
+          <DialogTitle className="text-orange-100">출석 돌림판</DialogTitle>
           <DialogDescription className="text-zinc-400">
             출석 1회마다 돌림판 칸 1개 · 같은 회원 칸은 떨어져 배치 · 칸마다 당첨 확률은 동일
           </DialogDescription>
@@ -182,15 +182,15 @@ export function AttendanceRouletteWheel({
             <>
               <RouletteWheelDisc slots={slots} rotation={rotation} spinning={spinning} />
               {winner ? (
-                <div className="rounded-lg border border-lime-400/35 bg-lime-500/10 px-4 py-3 text-center">
-                  <p className="text-xs text-lime-200/80">당첨</p>
-                  <p className="mt-1 text-lg font-bold text-lime-50">{winner.memberName}</p>
+                <div className="rounded-lg border border-orange-400/35 bg-orange-500/10 px-4 py-3 text-center">
+                  <p className="text-xs text-orange-200/80">당첨</p>
+                  <p className="mt-1 text-lg font-bold text-orange-50">{winner.memberName}</p>
                 </div>
               ) : null}
               {canSpin ? (
                 <Button
                   type="button"
-                  className="w-full bg-lime-500 text-zinc-950 hover:bg-lime-400"
+                  className="w-full bg-orange-500 text-zinc-950 hover:bg-orange-400"
                   disabled={spinning}
                   onClick={handleSpin}
                 >
@@ -216,7 +216,7 @@ export function AttendanceRouletteWheel({
                       />
                       <span className="truncate text-zinc-200">{row.memberName}</span>
                     </span>
-                    <span className="shrink-0 tabular-nums text-lime-300/90">
+                    <span className="shrink-0 tabular-nums text-orange-300/90">
                       {row.slotCount}칸 · {row.oddsPercent}%
                     </span>
                   </div>

@@ -30,21 +30,21 @@ export function MemberLeagueStatusCard({
     <div
       data-member-league-status
       className={cn(
-        'overflow-hidden rounded-xl border border-lime-400/40 bg-gradient-to-br from-zinc-950 via-black to-lime-500/[0.08] shadow-[0_0_24px_rgba(163,230,53,0.06)]',
+        'overflow-hidden rounded-xl border border-orange-400/40 bg-gradient-to-br from-zinc-950 via-black to-orange-500/[0.08] shadow-[0_0_24px_rgba(255, 106, 42,0.06)]',
         className,
       )}
     >
-      <div className="border-b border-lime-500/15 px-3 py-1.5 sm:px-4 sm:py-2.5">
-        <p className="text-[11px] font-semibold text-lime-100 sm:text-sm">내 현재 러닝 상태</p>
+      <div className="border-b border-orange-500/15 px-3 py-1.5 sm:px-4 sm:py-2.5">
+        <p className="text-[11px] font-semibold text-orange-100 sm:text-sm">내 현재 러닝 상태</p>
       </div>
 
       <div className="grid grid-cols-2 gap-1.5 p-2 sm:gap-3 sm:p-4 lg:grid-cols-4 lg:gap-3 lg:p-5">
         <StatusStatBlock
-          icon={<TrendingUp className="h-3.5 w-3.5 text-lime-400" />}
+          icon={<TrendingUp className="h-3.5 w-3.5 text-orange-400" />}
           label="현재 순위"
           value={snapshot.rankHeadline}
           hint={snapshot.rankSubline}
-          valueClassName="text-lime-300"
+          valueClassName="text-orange-300"
           compact={compact}
         />
         <StatusStatBlock
@@ -55,16 +55,16 @@ export function MemberLeagueStatusCard({
             snapshot.remainingToGoalLabel ??
             (snapshot.monthlyMileageKm > 0 ? '이번 달 누적' : '기록 추가')
           }
-          valueClassName="text-lime-200"
+          valueClassName="text-orange-200"
           compact={compact}
         />
         <StatusStatBlock
-          icon={<CalendarDays className="h-3.5 w-3.5 text-lime-400" />}
+          icon={<CalendarDays className="h-3.5 w-3.5 text-orange-400" />}
           label="이번 달 출석"
           value={attendanceValue}
           compactValue={attendanceValue}
           hint={snapshot.monthlyAttendanceSubline}
-          valueClassName="text-lime-200"
+          valueClassName="text-orange-200"
           compact={compact}
         />
         <StatusStatBlock
@@ -72,15 +72,15 @@ export function MemberLeagueStatusCard({
           value={snapshot.recentPbHeadline}
           compactValue={snapshot.recentPbShortValue}
           hint={snapshot.recentPbSubline}
-          valueClassName="text-lime-100"
+          valueClassName="text-orange-100"
           compact={compact}
         />
       </div>
 
       {!compact && (snapshot.soloRankHint || snapshot.comparisonHint) ? (
-        <div className="border-t border-lime-500/10 px-3 py-2 text-[11px] leading-relaxed text-zinc-400 sm:px-4 sm:py-2.5 sm:text-xs">
+        <div className="border-t border-orange-500/10 px-3 py-2 text-[11px] leading-relaxed text-zinc-400 sm:px-4 sm:py-2.5 sm:text-xs">
           {snapshot.isSoloRanked ? (
-            <p className="font-medium text-lime-200/80">현재 리그 1위입니다</p>
+            <p className="font-medium text-orange-200/80">현재 리그 1위입니다</p>
           ) : null}
           {snapshot.soloRankHint ? <p className={snapshot.isSoloRanked ? 'mt-0.5' : undefined}>{snapshot.soloRankHint}</p> : null}
           {snapshot.comparisonHint && !snapshot.isSoloRanked ? <p>{snapshot.comparisonHint}</p> : null}
@@ -88,7 +88,7 @@ export function MemberLeagueStatusCard({
       ) : null}
 
       {actionSlot ? (
-        <div className="border-t border-lime-500/10 p-2.5 sm:p-3">{actionSlot}</div>
+        <div className="border-t border-orange-500/10 p-2.5 sm:p-3">{actionSlot}</div>
       ) : null}
     </div>
   )
@@ -114,7 +114,7 @@ function StatusStatBlock({
   const compactDisplayValue = compactValue ?? value
 
   return (
-    <div className="min-w-0 rounded-lg border border-lime-500/15 bg-black/35 px-2 py-1.5 sm:rounded-xl sm:px-3.5 sm:py-3">
+    <div className="min-w-0 rounded-lg border border-orange-500/15 bg-black/35 px-2 py-1.5 sm:rounded-xl sm:px-3.5 sm:py-3">
       <div className="mb-0.5 flex items-center gap-1 text-[9px] font-medium uppercase tracking-wide text-zinc-500 sm:mb-1.5 sm:text-[11px]">
         {icon}
         <span className="truncate">{label}</span>

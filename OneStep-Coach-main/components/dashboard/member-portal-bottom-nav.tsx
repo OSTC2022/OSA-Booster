@@ -101,7 +101,7 @@ export function MemberPortalBottomNav({ role }: MemberPortalBottomNavProps) {
   }, [pathname])
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-primary/15 bg-[#090b12]/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       <div className="mx-auto grid max-w-[1120px] grid-cols-5 px-1">
         {navItems.map((item) => {
           const active = item.isActive(pathname, hash)
