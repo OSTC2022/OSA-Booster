@@ -345,5 +345,3 @@ export async function togglePortalMarathonRaceSignup(
   revalidateMarathonPaths()
   return { ok: true, signedUp: true }
 }
-
-export type { MarathonDistance, PortalMarathonRace, PortalMarathonRaceView }
