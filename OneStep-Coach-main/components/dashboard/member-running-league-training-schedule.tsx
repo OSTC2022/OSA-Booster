@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   CalendarDays,
   ChevronDown,
@@ -69,7 +68,6 @@ export function MemberRunningLeagueTrainingSchedule({
   className,
   contentOnly = false,
 }: MemberRunningLeagueTrainingScheduleProps) {
-  const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [pendingDayId, setPendingDayId] = useState<string | null>(null)
   const [scheduleDays, setScheduleDays] = useState(days)
@@ -136,7 +134,7 @@ export function MemberRunningLeagueTrainingSchedule({
         [day.id]: result.signedUp,
       }))
       toast.success(result.signedUp ? '참여 신청했습니다.' : '참여를 취소했습니다.')
-      router.refresh()
+      // router.refresh() 생략 — 참여 토글 시 스크롤/아코디언이 초기화되지 않도록
     })
   }
 

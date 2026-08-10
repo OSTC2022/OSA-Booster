@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { format, parseISO, differenceInCalendarDays } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import {
@@ -79,7 +78,6 @@ export function MemberPortalMarathonSchedule({
   /** 상위 아코디언에서 헤더 없이 본문만 표시 */
   contentOnly?: boolean
 }) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [monthKey, setMonthKey] = useState(ALL_MONTHS)
   const [distanceFilter, setDistanceFilter] = useState<string>(ALL_DISTANCES)
@@ -160,8 +158,8 @@ export function MemberPortalMarathonSchedule({
         toast.error(result.error)
         return
       }
+      // router.refresh() 하지 않음 — 모바일/태블릿에서 스크롤·필터·탭이 초기화됨
       toast.success(result.signedUp ? '참여로 표시했습니다.' : '참여를 취소했습니다.')
-      router.refresh()
     })
   }
 

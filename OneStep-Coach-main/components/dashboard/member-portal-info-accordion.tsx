@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { CalendarDays, ChevronDown, Megaphone } from 'lucide-react'
 import { MemberPortalNoticePanel } from '@/components/dashboard/member-portal-notice-panel'
 import { MemberPortalMarathonSchedule } from '@/components/dashboard/member-portal-marathon-schedule'
@@ -15,6 +15,19 @@ type PanelId = 'notice' | 'training' | 'race'
 
 const TAB_LABEL_CLASS =
   'truncate text-[13px] font-semibold leading-tight tracking-tight text-inherit sm:text-sm'
+
+const ACCORDION_STORAGE_KEY = 'member-portal-info-accordion'
+
+function readStoredPanel(): PanelId | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const value = sessionStorage.getItem(ACCORDION_STORAGE_KEY)
+    if (value === 'notice' || value === 'training' || value === 'race') return value
+  } catch {
+    // ignore
+  }
+  return null
+}
 
 type MemberPortalInfoAccordionProps = {
   notice?: string | null
@@ -40,9 +53,24 @@ export function MemberPortalInfoAccordion({
   className,
 }: MemberPortalInfoAccordionProps) {
   const [active, setActive] = useState<PanelId | null>(null)
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    setActive(readStoredPanel())
+    setHydrated(true)
+  }, [])
 
   function select(id: PanelId) {
-    setActive((current) => (current === id ? null : id))
+    setActive((current) => {
+      const next = current === id ? null : id
+      try {
+        if (next) sessionStorage.setItem(ACCORDION_STORAGE_KEY, next)
+        else sessionStorage.removeItem(ACCORDION_STORAGE_KEY)
+      } catch {
+        // ignore
+      }
+      return next
+    })
   }
 
   return (
@@ -74,11 +102,11 @@ export function MemberPortalInfoAccordion({
       <div
         className={cn(
           MEMBER_PORTAL_CARD_CLASS,
-          active === 'notice' ? 'block' : 'hidden',
+          hydrated && active === 'notice' ? 'block' : 'hidden',
         )}
         role="tabpanel"
         aria-labelledby="portal-info-tab-notice"
-        hidden={active !== 'notice'}
+        hidden={!hydrated || active !== 'notice'}
       >
         <MemberPortalNoticePanel
           notice={notice}
@@ -91,11 +119,11 @@ export function MemberPortalInfoAccordion({
       <div
         className={cn(
           MEMBER_PORTAL_CARD_CLASS,
-          active === 'training' ? 'block' : 'hidden',
+          hydrated && active === 'training' ? 'block' : 'hidden',
         )}
         role="tabpanel"
         aria-labelledby="portal-info-tab-training"
-        hidden={active !== 'training'}
+        hidden={!hydrated || active !== 'training'}
       >
         <MemberRunningLeagueTrainingSchedule
           days={trainingDays}
@@ -110,11 +138,11 @@ export function MemberPortalInfoAccordion({
       <div
         className={cn(
           MEMBER_PORTAL_CARD_CLASS,
-          active === 'race' ? 'block' : 'hidden',
+          hydrated && active === 'race' ? 'block' : 'hidden',
         )}
         role="tabpanel"
         aria-labelledby="portal-info-tab-race"
-        hidden={active !== 'race'}
+        hidden={!hydrated || active !== 'race'}
       >
         <MemberPortalMarathonSchedule
           races={marathonRaces}
