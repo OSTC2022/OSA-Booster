@@ -498,6 +498,9 @@ function revalidateMemberMileagePaths() {
   revalidatePath('/dashboard/my')
   revalidatePath('/dashboard/my/running-league')
   revalidatePath('/dashboard/settings/adult-running-portal')
+  revalidatePath('/dashboard/settings/weekly-missions')
+  revalidatePath('/dashboard/settings/team-battles')
+  // MVP/Achievement는 원본 로그에서 동적 계산 — my 페이지 revalidate로 반영
 }
 
 function isMissingTableError(error: { code?: string } | null): boolean {
@@ -2505,6 +2508,8 @@ export async function saveMemberMileageLog(input: {
   try {
     const mileageKm = await syncParticipantMileageFromLogs(supabase, participant.id)
     revalidateMemberMileagePaths()
+    const { evaluateAchievementsForMemberQuiet } = await import('@/lib/actions/achievements')
+    void evaluateAchievementsForMemberQuiet(participant.member_id)
     return { ok: true, mileageKm }
   } catch (syncError) {
     return {

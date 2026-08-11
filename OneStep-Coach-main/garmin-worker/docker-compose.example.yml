@@ -1,0 +1,22 @@
+# Example only — do not commit real secrets.
+# Usage: copy to docker-compose.override.yml locally, or use --env-file.
+
+services:
+  garmin-worker:
+    build: .
+    image: onestep-garmin-worker:latest
+    restart: unless-stopped
+    # Single replica for Garmin beta
+    deploy:
+      replicas: 1
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      GARMIN_TOKEN_ENCRYPTION_KEY: ${GARMIN_TOKEN_ENCRYPTION_KEY}
+      GARMIN_SYNC_ENABLED: ${GARMIN_SYNC_ENABLED:-true}
+      GARMIN_SYNC_INTERVAL_MINUTES: ${GARMIN_SYNC_INTERVAL_MINUTES:-120}
+      GARMIN_WORKER_TICK_SECONDS: ${GARMIN_WORKER_TICK_SECONDS:-60}
+      GARMIN_SYNC_MEMBER_DELAY_SECONDS: ${GARMIN_SYNC_MEMBER_DELAY_SECONDS:-5}
+      GARMIN_RATE_LIMIT_COOLDOWN_MINUTES: ${GARMIN_RATE_LIMIT_COOLDOWN_MINUTES:-120}
+      GARMIN_MAX_MEMBERS_PER_TICK: ${GARMIN_MAX_MEMBERS_PER_TICK:-3}
+    # No volume mounts for tokens — DB encrypted tokens only

@@ -411,6 +411,7 @@ export interface RunningLeagueMileageLog {
   calories?: number | null
   activity_time?: string | null
   source_app?: string | null
+  external_activity_id?: string | null
   screenshot_url?: string | null
   image_hash?: string | null
   extraction_confidence?: number | null

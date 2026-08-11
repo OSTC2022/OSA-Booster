@@ -1,4 +1,5 @@
-import type { AppRole, UserRole } from '@/lib/types'
+import type { UserRole } from '@/lib/types'
+import type { AppRole } from '@/lib/roles'
 import { isMemberPortalPath } from '@/lib/member-portal-routes'
 import type { SettingsAssignableRole } from '@/lib/settings-accounts-types'
 
@@ -36,6 +37,9 @@ export function isOperatorApprovalRoleAllowed(role: SettingsAssignableRole): boo
 const OPERATOR_SETTINGS_PATHS = [
   '/dashboard/settings',
   '/dashboard/settings/adult-running-portal',
+  '/dashboard/settings/weekly-missions',
+  '/dashboard/settings/team-battles',
+  '/dashboard/settings/raffle-events',
   '/dashboard/settings/running-schedule',
   '/dashboard/settings/center-board',
   '/dashboard/settings/adult-center-board',
@@ -53,6 +57,9 @@ export function canOperatorAccessPath(pathname: string): boolean {
 const OPERATOR_SETTINGS_NAV_HREFS = new Set<string>([
   '/dashboard/settings',
   '/dashboard/settings/adult-running-portal',
+  '/dashboard/settings/weekly-missions',
+  '/dashboard/settings/team-battles',
+  '/dashboard/settings/raffle-events',
   '/dashboard/settings/running-schedule',
   '/dashboard/settings/center-board',
   '/dashboard/settings/adult-center-board',

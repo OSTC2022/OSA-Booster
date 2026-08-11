@@ -1,0 +1,13 @@
+# Garmin worker secrets & tokens (never commit)
+.env
+.env.*
+!.env.example
+data/
+*.token
+**/garmin_tokens.json
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+response.json

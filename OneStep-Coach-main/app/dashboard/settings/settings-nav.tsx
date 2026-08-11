@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Award, Building2, CalendarDays, CalendarSync, Eye, HardDrive, Megaphone, MessageCircle, Trophy, Users } from 'lucide-react'
+import { Award, Building2, CalendarDays, CalendarSync, Eye, HardDrive, Megaphone, MessageCircle, Swords, Target, Ticket, Trophy, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isOperatorSettingsNavHref } from '@/lib/operator-access'
 import type { UserRole } from '@/lib/types'
@@ -19,6 +19,9 @@ const SETTINGS_TABS = [
       !path.startsWith('/dashboard/settings/center-board') &&
       !path.startsWith('/dashboard/settings/adult-center-board') &&
       !path.startsWith('/dashboard/settings/adult-running-portal') &&
+      !path.startsWith('/dashboard/settings/weekly-missions') &&
+      !path.startsWith('/dashboard/settings/team-battles') &&
+      !path.startsWith('/dashboard/settings/raffle-events') &&
       !path.startsWith('/dashboard/settings/running-schedule') &&
       !path.startsWith('/dashboard/settings/running-league') &&
       !path.startsWith('/dashboard/settings/backup') &&
@@ -30,6 +33,24 @@ const SETTINGS_TABS = [
     label: '성인 러닝 포털',
     icon: Eye,
     isActive: (path: string) => path.startsWith('/dashboard/settings/adult-running-portal'),
+  },
+  {
+    href: '/dashboard/settings/weekly-missions',
+    label: '주간 미션',
+    icon: Target,
+    isActive: (path: string) => path.startsWith('/dashboard/settings/weekly-missions'),
+  },
+  {
+    href: '/dashboard/settings/team-battles',
+    label: '팀 배틀',
+    icon: Swords,
+    isActive: (path: string) => path.startsWith('/dashboard/settings/team-battles'),
+  },
+  {
+    href: '/dashboard/settings/raffle-events',
+    label: '추첨 이벤트',
+    icon: Ticket,
+    isActive: (path: string) => path.startsWith('/dashboard/settings/raffle-events'),
   },
   {
     href: '/dashboard/settings/running-schedule',

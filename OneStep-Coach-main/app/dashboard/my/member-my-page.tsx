@@ -18,7 +18,26 @@ import { MemberPortalBrandHeader } from '@/components/dashboard/member-portal-br
 import { AttendanceRouletteWheel } from '@/components/dashboard/attendance-roulette-wheel'
 import { ChaseLadderGame } from '@/components/dashboard/chase-ladder-game'
 import { MemberPortalInfoAccordion } from '@/components/dashboard/member-portal-info-accordion'
+import { MemberMyRunningStatusCard } from '@/components/dashboard/member-my-running-status-card'
+import { MemberRunnerLevelCard } from '@/components/dashboard/member-runner-level-card'
+import { MemberRunningStreakCard } from '@/components/dashboard/member-running-streak-card'
+import { MemberRivalCard } from '@/components/dashboard/member-rival-card'
+import { MemberWeeklyMissionsCard } from '@/components/dashboard/member-weekly-missions-card'
+import { MemberTeamBattleCard } from '@/components/dashboard/member-team-battle-card'
+import { MemberMvpCard } from '@/components/dashboard/member-mvp-card'
+import { MemberAchievementsCard } from '@/components/dashboard/member-achievements-card'
+import { MemberRaffleEventCard } from '@/components/dashboard/member-raffle-event-card'
+import { MemberGarminConnectCard } from '@/components/dashboard/member-garmin-connect-card'
 import type { MemberRunningLeagueHome } from '@/lib/actions/running-league'
+import type { MemberRivalHome } from '@/lib/actions/member-rivals'
+import type { MemberMvpHome } from '@/lib/actions/mvp'
+import type { MemberAchievementsHome } from '@/lib/actions/achievements'
+import type { MemberRewardHome } from '@/lib/actions/rewards'
+import type { MemberRaffleHome } from '@/lib/actions/raffles'
+import type { ActivityConnectionStatus } from '@/lib/actions/garmin-connections'
+import type { TeamBattleScoreboard } from '@/lib/running-league/team-battle'
+import type { RunningStreakStatus } from '@/lib/running-league/running-streak'
+import type { WeeklyMissionsView } from '@/lib/running-league/weekly-missions'
 import type { CenterRunningTrainingScheduleBundle } from '@/lib/actions/center-running-training-schedule'
 import type { PortalMarathonRaceView } from '@/lib/portal-marathon-races'
 import type { MemberPortalData, MemberPortalSessionStatus } from '@/lib/member-portal-types'
@@ -37,6 +56,15 @@ interface MemberMyPageProps {
   data: MemberPortalData
   role?: string | null
   runningLeagueHome?: MemberRunningLeagueHome | null
+  runningStreak?: RunningStreakStatus | { unlinked: true } | null
+  rivalHome?: MemberRivalHome | null
+  weeklyMissions?: WeeklyMissionsView | { unlinked: true } | null
+  teamBattleHome?: { scoreboard: TeamBattleScoreboard | null; tableReady: boolean } | null
+  mvpHome?: MemberMvpHome | null
+  achievementsHome?: MemberAchievementsHome | null
+  rewardHome?: MemberRewardHome | null
+  raffleHome?: MemberRaffleHome | null
+  garminConnection?: ActivityConnectionStatus | null
   centerTrainingSchedule?: CenterRunningTrainingScheduleBundle | null
   adminPreview?: boolean
   runningLeagueHref?: string
@@ -124,6 +152,15 @@ export function MemberMyPage({
   data,
   role,
   runningLeagueHome,
+  runningStreak = null,
+  rivalHome = null,
+  weeklyMissions = null,
+  teamBattleHome = null,
+  mvpHome = null,
+  achievementsHome = null,
+  rewardHome = null,
+  raffleHome = null,
+  garminConnection = null,
   centerTrainingSchedule,
   adminPreview = false,
   runningLeagueHref = '/dashboard/my/running-league',
@@ -188,6 +225,29 @@ export function MemberMyPage({
             marathonRaces={marathonRaces}
             marathonTableReady={marathonTableReady}
             canParticipate={!adminPreview}
+            readOnly={adminPreview}
+          />
+          <MemberMyRunningStatusCard
+            memberId={member.id}
+            memberName={member.name}
+            runningLeagueHome={runningLeagueHome}
+            memberLinked
+          />
+          <MemberGarminConnectCard
+            initialConnection={garminConnection ?? null}
+            memberLinked
+            readOnly={adminPreview}
+          />
+          <MemberRunnerLevelCard home={rewardHome} memberLinked />
+          <MemberRaffleEventCard home={raffleHome} memberLinked readOnly={adminPreview} />
+          <MemberRunningStreakCard status={runningStreak} memberLinked />
+          <MemberRivalCard rivalHome={rivalHome} memberLinked readOnly={adminPreview} />
+          <MemberWeeklyMissionsCard view={weeklyMissions} memberLinked />
+          <MemberTeamBattleCard home={teamBattleHome} memberLinked />
+          <MemberMvpCard home={mvpHome} memberLinked />
+          <MemberAchievementsCard
+            home={achievementsHome}
+            memberLinked
             readOnly={adminPreview}
           />
           {runningLeagueHome ? (

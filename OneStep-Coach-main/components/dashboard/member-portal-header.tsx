@@ -34,6 +34,7 @@ function portalTitle(pathname: string, hash: string, role?: string | null): stri
     return hash === '#today-record' ? (isAdult ? '컨디션' : '오늘 기록') : isAdult ? '컨디션' : '리포트'
   }
   if (pathname.startsWith('/dashboard/my/sessions')) return '수업'
+  if (pathname.startsWith('/dashboard/my/run-point')) return 'RUN POINT SHOP'
   return isAdult ? '내 러닝 포털' : '내 선수 리포트'
 }
 

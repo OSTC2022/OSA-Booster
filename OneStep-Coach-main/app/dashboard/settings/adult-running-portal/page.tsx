@@ -19,7 +19,23 @@ import { PortalMileageTeamsSettingsPanel } from '@/components/dashboard/portal-m
 import { PortalMarathonRacesSettingsPanel } from '@/components/dashboard/portal-marathon-races-settings-panel'
 import { getPortalMileageTeamsAdmin } from '@/lib/actions/portal-mileage-teams'
 import { listPortalMarathonRacesAdmin } from '@/lib/actions/portal-marathon-races'
+import { getMemberWeeklyMissionsHome, listWeeklyMissionsAdmin } from '@/lib/actions/weekly-missions'
+import { getMemberRunningStreakHome } from '@/lib/actions/running-streak'
+import { getMemberRivalHome } from '@/lib/actions/member-rivals'
+import {
+  getMemberTeamBattleHome,
+  listTeamBattleMemberCandidates,
+  listTeamBattlesAdmin,
+} from '@/lib/actions/team-battles'
+import { getMemberMvpHome } from '@/lib/actions/mvp'
+import { getMemberAchievementsHome } from '@/lib/actions/achievements'
+import { getMemberRewardHome } from '@/lib/actions/rewards'
+import { getMemberRaffleHome, listRafflesAdmin } from '@/lib/actions/raffles'
 import { getCenterBoardPostsForAdmin } from '@/lib/actions/center-board'
+import { WeeklyMissionsSettingsPanel } from '@/components/dashboard/weekly-missions-settings-panel'
+import { TeamBattlesSettingsPanel } from '@/components/dashboard/team-battles-settings-panel'
+import { RaffleEventsSettingsPanel } from '@/components/dashboard/raffle-events-settings-panel'
+import { GarminSyncAdminPanel } from '@/components/dashboard/garmin-sync-admin-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,21 +43,52 @@ export default async function AdultRunningPortalSettingsPage() {
   const user = await requireDashboardProfile()
   if (!canAccessSettingsArea(user.role)) redirect('/unauthorized')
 
+  const runningLeagueHome = await getAdultRunningPortalAdminPreview()
+  const previewMemberId = runningLeagueHome.participant?.member_id ?? null
+
   const [
-    runningLeagueHome,
+    weeklyMissions,
+    runningStreak,
+    weeklyMissionsAdmin,
+    teamBattlesAdmin,
+    teamBattleCandidates,
+    teamBattleHome,
+    mvpHome,
+    achievementsHome,
+    rewardHome,
+    raffleHome,
+    rafflesAdmin,
     centerTrainingSchedule,
     centerSettings,
     mileageTeams,
     marathonRaces,
     noticeBoardPosts,
   ] = await Promise.all([
-    getAdultRunningPortalAdminPreview(),
+    getMemberWeeklyMissionsHome(previewMemberId),
+    getMemberRunningStreakHome(previewMemberId),
+    listWeeklyMissionsAdmin(),
+    listTeamBattlesAdmin(),
+    listTeamBattleMemberCandidates(),
+    getMemberTeamBattleHome(previewMemberId),
+    getMemberMvpHome(previewMemberId),
+    getMemberAchievementsHome(previewMemberId),
+    getMemberRewardHome(previewMemberId),
+    getMemberRaffleHome(previewMemberId),
+    listRafflesAdmin(),
     getCenterRunningTrainingScheduleAdminPreview(),
     getCenterSettings(),
     getPortalMileageTeamsAdmin(),
     listPortalMarathonRacesAdmin(),
     getCenterBoardPostsForAdmin('notice', 'adult'),
   ])
+
+  const rivalHome = previewMemberId
+    ? await getMemberRivalHome({
+        memberId: previewMemberId,
+        memberName: runningLeagueHome.participant?.member?.name ?? '회원',
+        runningLeagueHome,
+      })
+    : { unlinked: true as const }
 
   return (
     <div className="space-y-4">
@@ -61,6 +108,38 @@ export default async function AdultRunningPortalSettingsPage() {
           tableReady={marathonRaces.tableReady}
         />
       )}
+      {'error' in weeklyMissionsAdmin ? (
+        <WeeklyMissionsSettingsPanel
+          initialMissions={[]}
+          tableReady={false}
+          loadError={weeklyMissionsAdmin.error}
+        />
+      ) : (
+        <WeeklyMissionsSettingsPanel
+          initialMissions={weeklyMissionsAdmin.missions}
+          tableReady={weeklyMissionsAdmin.tableReady}
+        />
+      )}
+      {'error' in teamBattlesAdmin ? (
+        <TeamBattlesSettingsPanel
+          initialBattles={[]}
+          candidates={'error' in teamBattleCandidates ? [] : teamBattleCandidates.candidates}
+          tableReady={false}
+          loadError={teamBattlesAdmin.error}
+        />
+      ) : (
+        <TeamBattlesSettingsPanel
+          initialBattles={teamBattlesAdmin.battles}
+          candidates={'error' in teamBattleCandidates ? [] : teamBattleCandidates.candidates}
+          tableReady={teamBattlesAdmin.tableReady}
+          loadError={'error' in teamBattleCandidates ? teamBattleCandidates.error : null}
+        />
+      )}
+      <RaffleEventsSettingsPanel
+        initialEvents={rafflesAdmin.events}
+        tableReady={rafflesAdmin.tableReady}
+        loadError={rafflesAdmin.error}
+      />
       <AdultPortalRankingPeriodSettingsPanel centerSettings={centerSettings} />
       <AdultPortalMileageMinimumSettingsPanel centerSettings={centerSettings} />
       <AdultPortalAnimalTierHalfSettingsPanel centerSettings={centerSettings} />
@@ -72,6 +151,9 @@ export default async function AdultRunningPortalSettingsPage() {
         centerSettings={centerSettings}
         teamCount={'error' in mileageTeams ? 0 : mileageTeams.teams.filter((t) => t.is_active).length}
       />
+      {(user.role === 'admin' || user.role === 'operator') ? (
+        <GarminSyncAdminPanel />
+      ) : null}
       {'error' in mileageTeams ? (
         <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           팀전 설정을 불러오지 못했습니다: {mileageTeams.error}
@@ -94,6 +176,14 @@ export default async function AdultRunningPortalSettingsPage() {
       ) : null}
       <AdultRunningPortalAdminView
         runningLeagueHome={runningLeagueHome}
+        runningStreak={runningStreak}
+        rivalHome={rivalHome}
+        weeklyMissions={weeklyMissions}
+        teamBattleHome={teamBattleHome}
+        mvpHome={mvpHome}
+        achievementsHome={achievementsHome}
+        rewardHome={rewardHome}
+        raffleHome={raffleHome}
         centerTrainingSchedule={centerTrainingSchedule}
         chaseMemberId={centerSettings.adult_portal_chase_member_id}
         chaseLabel={centerSettings.adult_portal_chase_label}
